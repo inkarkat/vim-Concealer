@@ -25,6 +25,23 @@ else " fallback
     endfunction
 endif
 
+function! Concealer#Winbufdo( command )
+    let l:buffers = []
+
+    let l:currentWinNr = winnr()
+    " By entering a window, its height is potentially increased from 0 to 1 (the
+    " minimum for the current window). To avoid any modification, save the window
+    " sizes and restore them after visiting all windows.
+    let l:originalWindowLayout = winrestcmd()
+	noautocmd windo
+	    \   if index(l:buffers, bufnr('')) == -1 |
+	    \       call add(l:buffers, bufnr('')) |
+	    \       execute a:command |
+	    \   endif
+    execute l:currentWinNr . 'wincmd w'
+    silent! execute l:originalWindowLayout
+endfunction
+
 
 function! s:SetConcealDefaults()
     if ! empty(g:Concealer_ConcealLevel)
@@ -35,8 +52,9 @@ function! s:SetConcealDefaults()
     endif
 endfunction
 
-function! s:Conceal( count, char, pattern )
-    execute printf('syntax match Concealer%d containedin=ALL transparent conceal %s /%s/',
+function! s:Conceal( scope, count, char, pattern )
+    execute printf('syntax match Concealer%s%d containedin=ALL transparent keepend conceal %s /%s/',
+    \   a:scope,
     \   a:count,
     \   (empty(a:char) ? '' : 'cchar=' . a:char),
     \   a:pattern
@@ -44,33 +62,79 @@ function! s:Conceal( count, char, pattern )
 
     call s:SetConcealDefaults()
 endfunction
-function! Concealer#AddPattern( count, pattern )
-    if a:count
-	let l:count = a:count
-    else
-	if exists('b:Concealer_Count')
-	    let b:Concealer_Count += 1
+let s:globalCount = 0
+let s:globalConceals = {}
+function! Concealer#UpdateCount( count )
+    silent! execute printf('syntax clear ConcealerGlobal%d', a:count)
+
+    let l:char = get(split(g:Concealer_Characters_Global, '\zs'), a:count - 1, '')
+    for l:pattern in get(s:globalConceals, a:count, [])
+	call s:Conceal('Global', a:count, l:char, l:pattern)
+    endfor
+endfunction
+function! Concealer#UpdateBuffer()
+    for l:count in keys(s:globalConceals)
+	call Concealer#UpdateCount(l:count)
+    endfor
+endfunction
+function! s:EnsureUpdates()
+    if ! exists('#Concealer')
+	augroup Concealer
+	    autocmd!
+	    autocmd BufWinEnter * call Concealer#UpdateBuffer()
+	    autocmd TabEnter    * call Concealer#Winbufdo('call Concealer#UpdateBuffer()')
+	augroup END
+    endif
+endfunction
+function! Concealer#AddPattern( isGlobal, count, pattern )
+    if a:isGlobal
+	if a:count
+	    let l:count = a:count
 	else
-	    let b:Concealer_Count = 1
+	    let s:globalCount += 1
+	    let l:count = s:globalCount
 	endif
-	let l:count = b:Concealer_Count
+
+	if has_key(s:globalConceals, l:count)
+	    if index(s:globalConceals[l:count], a:pattern) == -1
+		call add(s:globalConceals[l:count], a:pattern)
+	    endif
+	else
+	    let s:globalConceals[l:count] = [a:pattern]
+	endif
+
+	call Concealer#Winbufdo(printf('call Concealer#UpdateCount(%d)', l:count))
+	call s:EnsureUpdates()
+
+	let l:char = get(split(g:Concealer_Characters_Global, '\zs'), l:count - 1, '')
+	return [l:char, join(s:globalConceals[l:count], '\|')]
+    else
+	if a:count
+	    let l:count = a:count
+	else
+	    if exists('b:Concealer_Count')
+		let b:Concealer_Count += 1
+	    else
+		let b:Concealer_Count = 1
+	    endif
+	    let l:count = b:Concealer_Count
+	endif
+	let l:char = get(split(g:Concealer_Characters_Local, '\zs'), l:count - 1, '')
+
+	call s:Conceal('Local', l:count, l:char, a:pattern)
+	return [l:char, a:pattern]
     endif
 
-    let l:char = get(split(g:Concealer_Characters, '\zs'), l:count - 1, '')
-
-    call s:Conceal(l:count, l:char, a:pattern)
-
-    return l:char
 endfunction
-function! Concealer#AddLiteralText( count, text, isWholeWordSearch )
-    let l:char = Concealer#AddPattern(a:count, ingosearch#LiteralTextToSearchPattern(a:text, a:isWholeWordSearch, '/'))
+function! Concealer#AddLiteralText( isGlobal, count, text, isWholeWordSearch )
+    let [l:char, l:pattern] = Concealer#AddPattern(a:isGlobal, a:count, ingosearch#LiteralTextToSearchPattern(a:text, a:isWholeWordSearch, '/'))
 
     echo
     echohl Conceal
 	echon l:char
     echohl None
     echon '='
-    call s:Echo(a:text)
+    call s:Echo(printf('/%s/', l:pattern))
 endfunction
 
 " vim: set ts=8 sts=4 sw=4 noexpandtab ff=unix fdm=syntax :
