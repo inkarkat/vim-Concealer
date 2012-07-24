@@ -39,13 +39,16 @@ function! s:EchoConceal( data, isShorten )
     let [l:count, l:char, l:pattern] = a:data
     echo printf('%3d ', l:count)
     echohl Conceal
-	echon l:char
+	echon (empty(l:char) ? ' ' : l:char)
     echohl None
     call s:Echo(printf(' %s', l:pattern), a:isShorten)
 endfunction
 
 function! s:GetChar( count )
     return get(split(g:Concealer_Characters_Global, '\zs'), a:count - 1, '')
+endfunction
+function! s:GetCharSize()
+    return len(split(g:Concealer_Characters_Global, '\zs'))
 endfunction
 
 function! Concealer#Winbufdo( command )
@@ -89,8 +92,27 @@ endfunction
 
 
 
-let s:globalCount = 0
-let s:globalConceals = {}
+if ! exists('s:globalCount')
+    let s:globalCount = 1
+    let s:globalConceals = {}
+endif
+function! s:Cycle()
+    let l:charNum = s:GetCharSize()
+    let l:startCount = (s:globalCount <= l:charNum ? s:globalCount : 1)
+    for l:idx in range(l:charNum)
+	let l:newCount = l:startCount + l:idx
+	if empty(get(s:globalConceals, ((l:newCount - 1) % l:charNum) + 1, []))
+	    if s:globalCount < l:newCount
+		let s:globalCount = l:newCount
+	    endif
+	    return l:newCount
+	endif
+    endfor
+
+    let s:globalCount += 1
+    return s:globalCount
+endfunction
+
 function! Concealer#UpdateCount( count )
     silent! execute printf('syntax clear ConcealerGlobal%d', a:count)
 
@@ -118,8 +140,7 @@ function! Concealer#AddPattern( isGlobal, count, pattern )
 	if a:count
 	    let l:count = a:count
 	else
-	    let s:globalCount += 1
-	    let l:count = s:globalCount
+	    let l:count = s:Cycle()
 	endif
 
 	if has_key(s:globalConceals, l:count)
@@ -159,28 +180,51 @@ function! Concealer#AddLiteralText( isGlobal, count, text, isWholeWordSearch )
 endfunction
 
 function! Concealer#RemPattern( count, pattern )
-    if ! has_key(s:globalConceals, a:count)
-	return []
-    endif
-
-    if empty(a:pattern)
-	unlet! s:globalConceals[a:count]
-    else
-	let l:prevLen = len(s:globalConceals[a:count])
-	call filter(s:globalConceals[a:count], 'v:val !=# a:pattern')
-	if len(s:globalConceals[a:count]) == l:prevLen
+    if a:count
+	if ! has_key(s:globalConceals, a:count)
 	    return []
+	endif
+	let l:counts = [a:count]
+    else
+	if empty(a:pattern)
+	    " Specialization: Just trash everything.
+	    for l:count in keys(s:globalConceals)
+		" First clear the patterns only, so that
+		" Concealer#UpdateBuffer() still iterates over the counts to
+		" remove the syntax definitions.
+		let s:globalConceals[l:count] = []
+	    endfor
+	    call Concealer#Winbufdo('call Concealer#UpdateBuffer()')
+	    " Now we can clear the entire dictionary.
+	    let s:globalConceals = {}
+	    return [0, ' ', '']
+	else
+	    let l:counts = keys(s:globalConceals)
 	endif
     endif
 
-    call Concealer#Winbufdo(printf('call Concealer#UpdateCount(%d)', a:count))
-    return [a:count, s:GetChar(a:count), join(get(s:globalConceals, a:count, []), '\|')]
+    for l:count in l:counts
+	if empty(a:pattern)
+	    unlet! s:globalConceals[l:count]
+	else
+	    let l:prevLen = len(s:globalConceals[l:count])
+	    call filter(s:globalConceals[l:count], 'v:val !=# a:pattern')
+	    if len(s:globalConceals[l:count]) == l:prevLen
+		" The pattern wasn't in that slot.
+		continue
+	    endif
+	endif
+
+	call Concealer#Winbufdo(printf('call Concealer#UpdateCount(%d)', l:count))
+	return [l:count, s:GetChar(l:count), join(get(s:globalConceals, l:count, []), '\|')]
+    endfor
+
+    return []
 endfunction
 function! Concealer#RemLiteralText( count, text, isWholeWordSearch )
     let l:result = Concealer#RemPattern(a:count, ingosearch#LiteralTextToSearchPattern(a:text, a:isWholeWordSearch, '/'))
     if empty(l:result)
-	" The text wasn't found in the search pattern; inform the user via a
-	" bell.
+	" The text wasn't found; inform the user via a bell.
 	execute "normal! \<C-\>\<C-n>\<Esc>"
     else
 	call s:EchoConceal(l:result, 1)
@@ -191,12 +235,20 @@ function! Concealer#AddCommand( isGlobal, count, pattern )
     let l:result = Concealer#AddPattern(a:isGlobal, a:count, a:pattern)
     call s:EchoConceal(l:result, 0)
 endfunction
-function! Concealer#RemCommand( count, pattern )
+function! Concealer#RemCommand( isForce, count, pattern )
+    if ! a:count && empty(a:pattern) && ! a:isForce
+	call s:ErrorMsg('Neither count nor pattern given (add ! to clear all conceals)')
+	return
+    endif
+
     let l:result = Concealer#RemPattern(a:count, a:pattern)
     if empty(l:result)
 	call s:ErrorMsg(empty(a:pattern) ?
 	\   printf('No conceal %d defined', a:count) :
-	\   printf('Pattern not found in %s', join(get(s:globalConceals, a:count, ['(empty conceal)']), '\|'))
+	\   (a:count ?
+	\       printf('Pattern not found in %s', join(get(s:globalConceals, a:count, ['(empty conceal)']), '\|')) :
+	\       'Pattern not found'
+	\   )
 	\)
     else
 	call s:EchoConceal(l:result, 0)
@@ -208,8 +260,7 @@ function! Concealer#List()
     echo 'cnt char pattern'
     echohl None
 
-    let l:chars = split(g:Concealer_Characters_Global, '\zs')
-    for l:count in sort(ingocollections#unique(range(1, len(l:chars)) + keys(s:globalConceals)), 'ingocollections#numsort')
+    for l:count in sort(ingocollections#unique(range(1, s:GetCharSize()) + keys(s:globalConceals)), 'ingocollections#numsort')
 	call s:EchoConceal([l:count, s:GetChar(l:count), join(get(s:globalConceals, l:count, []), '\|')], 0)
     endfor
 endfunction
