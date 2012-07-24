@@ -1,8 +1,9 @@
 " Concealer.vim: Manually conceal current word or selection.
 "
 " DEPENDENCIES:
-"   - ingosearch.vim autoload script.
-"   - EchoWithoutScrolling.vim (optional).
+"   - ingocollections.vim autoload script
+"   - ingosearch.vim autoload script
+"   - EchoWithoutScrolling.vim (optional)
 "
 " Copyright: (C) 2012 Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'.
@@ -11,19 +12,28 @@
 "
 " REVISION	DATE		REMARKS
 "	001	24-Jul-2012	file creation
+let s:save_cpo = &cpo
+set cpo&vim
 
 " Use EchoWithoutScrolling#Echo to emulate the built-in truncation of the search
 " pattern (via ':set shortmess+=T').
 silent! call EchoWithoutScrolling#MaxLength()	" Execute a function to force autoload.
 if exists('*EchoWithoutScrolling#Echo')
-    function! s:Echo( msg )
-	echon EchoWithoutScrolling#Truncate(EchoWithoutScrolling#TranslateLineBreaks(a:msg), 2)
+    function! s:Echo( msg, isShorten )
+	echon (a:isShorten ? EchoWithoutScrolling#Truncate(EchoWithoutScrolling#TranslateLineBreaks(a:msg), 6) : a:msg)
     endfunction
 else " fallback
-    function! s:Echo( msg )
-	execute 'echon' a:msg
+    function! s:Echo( msg, isShorten )
+	echon a:msg
     endfunction
 endif
+
+function! s:ErrorMsg( text )
+    echohl ErrorMsg
+    let v:errmsg = a:text
+    echomsg v:errmsg
+    echohl None
+endfunction
 
 function! Concealer#Winbufdo( command )
     let l:buffers = []
@@ -40,6 +50,15 @@ function! Concealer#Winbufdo( command )
 	    \   endif
     execute l:currentWinNr . 'wincmd w'
     silent! execute l:originalWindowLayout
+endfunction
+
+function! s:EchoConceal( data, isShorten )
+    let [l:count, l:char, l:pattern] = a:data
+    echo printf('%3d ', l:count)
+    echohl Conceal
+	echon l:char
+    echohl None
+    call s:Echo(printf(' %s', l:pattern), a:isShorten)
 endfunction
 
 
@@ -107,7 +126,7 @@ function! Concealer#AddPattern( isGlobal, count, pattern )
 	call s:EnsureUpdates()
 
 	let l:char = get(split(g:Concealer_Characters_Global, '\zs'), l:count - 1, '')
-	return [l:char, join(s:globalConceals[l:count], '\|')]
+	return [l:count, l:char, join(s:globalConceals[l:count], '\|')]
     else
 	if a:count
 	    let l:count = a:count
@@ -122,19 +141,72 @@ function! Concealer#AddPattern( isGlobal, count, pattern )
 	let l:char = get(split(g:Concealer_Characters_Local, '\zs'), l:count - 1, '')
 
 	call s:Conceal('Local', l:count, l:char, a:pattern)
-	return [l:char, a:pattern]
+	return [l:count, l:char, a:pattern]
     endif
 
 endfunction
 function! Concealer#AddLiteralText( isGlobal, count, text, isWholeWordSearch )
-    let [l:char, l:pattern] = Concealer#AddPattern(a:isGlobal, a:count, ingosearch#LiteralTextToSearchPattern(a:text, a:isWholeWordSearch, '/'))
+    let l:result = Concealer#AddPattern(a:isGlobal, a:count, ingosearch#LiteralTextToSearchPattern(a:text, a:isWholeWordSearch, '/'))
 
-    echo
-    echohl Conceal
-	echon l:char
-    echohl None
-    echon '='
-    call s:Echo(printf('/%s/', l:pattern))
+    call s:EchoConceal(l:result, 1)
 endfunction
 
+function! Concealer#RemPattern( count, pattern )
+    if ! has_key(s:globalConceals, a:count)
+	return []
+    endif
+
+    if empty(a:pattern)
+	unlet! s:globalConceals[a:count]
+    else
+	let l:prevLen = len(s:globalConceals[a:count])
+	call filter(s:globalConceals[a:count], 'v:val !=# a:pattern')
+	if len(s:globalConceals[a:count]) == l:prevLen
+	    return []
+	endif
+    endif
+
+    call Concealer#Winbufdo(printf('call Concealer#UpdateCount(%d)', a:count))
+    return [a:count, get(split(g:Concealer_Characters_Global, '\zs'), a:count - 1, ''), join(get(s:globalConceals, a:count, []), '\|')]
+endfunction
+function! Concealer#RemLiteralText( count, text, isWholeWordSearch )
+    let l:result = Concealer#RemPattern(a:count, ingosearch#LiteralTextToSearchPattern(a:text, a:isWholeWordSearch, '/'))
+    if empty(l:result)
+	" The text wasn't found in the search pattern; inform the user via a
+	" bell.
+	execute "normal! \<C-\>\<C-n>\<Esc>"
+    else
+	call s:EchoConceal(l:result, 1)
+    endif
+endfunction
+
+function! Concealer#AddCommand( isGlobal, count, pattern )
+    let l:result = Concealer#AddPattern(a:isGlobal, a:count, a:pattern)
+    call s:EchoConceal(l:result, 0)
+endfunction
+function! Concealer#RemCommand( count, pattern )
+    let l:result = Concealer#RemPattern(a:count, a:pattern)
+    if empty(l:result)
+	call s:ErrorMsg(empty(a:pattern) ?
+	\   printf('No conceal %d defined', a:count) :
+	\   printf('Pattern not found in %s', join(get(s:globalConceals, a:count, ['(empty conceal)']), '\|'))
+	\)
+    else
+	call s:EchoConceal(l:result, 0)
+    endif
+endfunction
+
+function! Concealer#List()
+    echohl Title
+    echo 'cnt char pattern'
+    echohl None
+
+    let l:chars = split(g:Concealer_Characters_Global, '\zs')
+    for l:count in sort(ingocollections#unique(range(1, len(l:chars)) + keys(s:globalConceals)), 'ingocollections#numsort')
+	call s:EchoConceal([l:count, get(l:chars, l:count - 1, ''), join(get(s:globalConceals, l:count, []), '\|')], 0)
+    endfor
+endfunction
+
+let &cpo = s:save_cpo
+unlet s:save_cpo
 " vim: set ts=8 sts=4 sw=4 noexpandtab ff=unix fdm=syntax :
