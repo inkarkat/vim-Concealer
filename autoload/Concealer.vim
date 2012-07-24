@@ -44,6 +44,9 @@ function! s:EchoConceal( data, isShorten )
     call s:Echo(printf(' %s', l:pattern), a:isShorten)
 endfunction
 
+function! s:GetLocalChar( count )
+    return get(split(g:Concealer_Characters_Local, '\zs'), a:count - 1, '')
+endfunction
 function! s:GetChar( count )
     return get(split(g:Concealer_Characters_Global, '\zs'), a:count - 1, '')
 endfunction
@@ -255,14 +258,64 @@ function! Concealer#RemCommand( isForce, count, pattern )
     endif
 endfunction
 
-function! Concealer#List()
+function! s:ParseSyntaxOutput( syntaxLine )
+    return matchlist(a:syntaxLine, '^\%(ConcealerLocal\(\d\+\)\s.\{-}\)\?\s\+match /\(.*\)/')[1:2]
+endfunction
+function! Concealer#ListLocal()
+    if ! exists('b:Concealer_Count') || b:Concealer_Count == 0
+	return 0
+    endif
+
+    redir => l:concealSyntaxOutput
+    silent! execute 'syntax list' join(map(range(1, b:Concealer_Count), '"ConcealerLocal" . v:val'))
+    redir END
+    let l:concealSyntax = split(l:concealSyntaxOutput, "\n")[1:]
+    if empty(l:concealSyntax)
+	return 0
+    endif
+
     echohl Title
-    echo 'cnt char pattern'
+    echo 'cnt char  pattern (buffer-local)'
+    echohl None
+
+    let l:prevCount = 0
+    let l:patterns = []
+    for l:line in l:concealSyntax
+	let [l:count, l:pattern] = s:ParseSyntaxOutput(l:line)
+	if empty(l:count)
+	    let l:count = l:prevCount
+	    call add(l:patterns, l:pattern)
+	else
+	    if l:prevCount > 0
+		call s:EchoConceal([l:prevCount, s:GetLocalChar(l:prevCount), join(l:patterns, '\|')], 1)
+	    endif
+	    let l:prevCount = l:count
+	    let l:patterns = [l:pattern]
+	endif
+    endfor
+    if l:prevCount > 0
+	call s:EchoConceal([l:prevCount, s:GetLocalChar(l:prevCount), join(l:patterns, '\|')], 1)
+    endif
+
+    return 1
+endfunction
+function! Concealer#ListGlobal()
+    echohl Title
+    echo 'cnt char  pattern'
     echohl None
 
     for l:count in sort(ingocollections#unique(range(1, s:GetCharSize()) + keys(s:globalConceals)), 'ingocollections#numsort')
 	call s:EchoConceal([l:count, s:GetChar(l:count), join(get(s:globalConceals, l:count, []), '\|')], 0)
     endfor
+endfunction
+function! Concealer#List()
+    let l:hasLocal = Concealer#ListLocal()
+    if ! l:hasLocal || ! empty(keys(s:globalConceals))
+	" Do not show the empty global conceals when local conceals are defined;
+	" it's unlikely that one is using both local and global concurrently, so
+	" let's focus the output on the currently active set.
+	call Concealer#ListGlobal()
+    endif
 endfunction
 
 let &cpo = s:save_cpo
