@@ -133,8 +133,8 @@ function! s:EnsureUpdates()
     if ! exists('#Concealer')
 	augroup Concealer
 	    autocmd!
-	    autocmd BufWinEnter * call Concealer#UpdateBuffer()
-	    autocmd TabEnter    * call Concealer#Winbufdo('call Concealer#UpdateBuffer()')
+	    autocmd BufWinEnter,Syntax * call Concealer#UpdateBuffer()
+	    autocmd TabEnter * call Concealer#Winbufdo('call Concealer#UpdateBuffer()')
 	augroup END
     endif
 endfunction
@@ -225,7 +225,11 @@ function! Concealer#RemPattern( count, pattern )
     return []
 endfunction
 function! Concealer#RemLiteralText( count, text, isWholeWordSearch )
-    let l:result = Concealer#RemPattern(a:count, ingosearch#LiteralTextToSearchPattern(a:text, a:isWholeWordSearch, '/'))
+    if a:count
+	let l:result = Concealer#RemPattern(a:count, '')
+    else
+	let l:result = Concealer#RemPattern(a:count, ingosearch#LiteralTextToSearchPattern(a:text, a:isWholeWordSearch, '/'))
+    endif
     if empty(l:result)
 	" The text wasn't found; inform the user via a bell.
 	execute "normal! \<C-\>\<C-n>\<Esc>"
