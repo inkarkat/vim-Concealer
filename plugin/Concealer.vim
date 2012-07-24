@@ -56,19 +56,19 @@ command! -count -nargs=1 -complete=expression ConcealAdd  call Concealer#AddPatt
 
 nnoremap <silent> <Plug>(ConcealerAddLocal) :<C-u>call Concealer#AddLiteralText(0, v:count, expand('<cword>'), 1)<CR>
 if ! hasmapto('<Plug>(ConcealerAddLocal)', 'n')
-    nmap <Leader>Xx <Plug>(ConcealerAddLocal)
+    nmap <Leader>XX <Plug>(ConcealerAddLocal)
 endif
 vnoremap <silent> <Plug>(ConcealerAddLocal) :<C-u>call Concealer#AddLiteralText(0, v:count, ingointegration#GetVisualSelection(), 0)<CR>
 if ! hasmapto('<Plug>(Concealer)', 'x')
-    xmap <Leader>Xx <Plug>(ConcealerAddLocal)
+    xmap <Leader>XX <Plug>(ConcealerAddLocal)
 endif
 nnoremap <silent> <Plug>(ConcealerAddGlobal) :<C-u>call Concealer#AddLiteralText(1, v:count, expand('<cword>'), 1)<CR>
 if ! hasmapto('<Plug>(ConcealerAddGlobal)', 'n')
-    nmap <Leader>XX <Plug>(ConcealerAddGlobal)
+    nmap <Leader>X+ <Plug>(ConcealerAddGlobal)
 endif
 vnoremap <silent> <Plug>(ConcealerAddGlobal) :<C-u>call Concealer#AddLiteralText(1, v:count, ingointegration#GetVisualSelection(), 0)<CR>
 if ! hasmapto('<Plug>(Concealer)', 'x')
-    xmap <Leader>XX <Plug>(ConcealerAddGlobal)
+    xmap <Leader>X+ <Plug>(ConcealerAddGlobal)
 endif
 
 " vim: set ts=8 sts=4 sw=4 noexpandtab ff=unix fdm=syntax :
