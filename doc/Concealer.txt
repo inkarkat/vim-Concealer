@@ -1,0 +1,86 @@
+*Concealer.txt*         Manually conceal current word or selection.
+
+			 CONCEALER    by Ingo Karkat
+							       *Concealer.vim*
+description			|Concealer-description|
+usage				|Concealer-usage|
+installation			|Concealer-installation|
+configuration			|Concealer-configuration|
+integration			|Concealer-integration|
+limitations			|Concealer-limitations|
+known problems			|Concealer-known-problems|
+todo				|Concealer-todo|
+history				|Concealer-history|
+
+==============================================================================
+DESCRIPTION					       *Concealer-description*
+
+This plugin ...
+
+HOW IT WORKS								     *
+
+SEE ALSO								     *
+
+RELATED WORKS								     *
+
+==============================================================================
+USAGE							     *Concealer-usage*
+								 *<Leader>Foo*
+<Leader>Foo		Description here.
+							  *:Concealer*
+:Concealer	Description here.
+
+EXAMPLE							   *Concealer-example*
+
+==============================================================================
+INSTALLATION					      *Concealer-installation*
+
+This script is packaged as a |vimball|. If you have the "gunzip" decompressor
+in your PATH, simply edit the *.vba.gz package in Vim; otherwise, decompress
+the archive first, e.g. using WinZip. Inside Vim, install by sourcing the
+vimball or via the |:UseVimball| command. >
+    vim Concealer.vba.gz
+    :so %
+To uninstall, use the |:RmVimball| command.
+
+DEPENDENCIES					      *Concealer-dependencies*
+
+- Requires Vim 7.0 or higher.
+
+==============================================================================
+CONFIGURATION					     *Concealer-configuration*
+
+For a permanent configuration, put the following commands into your |vimrc|:
+
+						*g:Concealer_MyOption*
+To change the default TODO from FOO to BAR, use: >
+    let g:Concealer_MyOption = 'BAR'
+<
+==============================================================================
+INTEGRATION					       *Concealer-integration*
+
+==============================================================================
+LIMITATIONS					       *Concealer-limitations*
+
+KNOWN PROBLEMS					    *Concealer-known-problems*
+
+TODO							      *Concealer-todo*
+
+IDEAS							     *Concealer-ideas*
+
+==============================================================================
+HISTORY							   *Concealer-history*
+
+GOAL
+First published version.
+
+0.01	24-Jul-2012
+Started development.
+
+==============================================================================
+Copyright: (C) 2012 Ingo Karkat
+The VIM LICENSE applies to this script; see |copyright|.
+
+Maintainer:	Ingo Karkat <ingo@karkat.de>
+==============================================================================
+ vim:tw=78:ts=8:ft=help:norl:
