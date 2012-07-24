@@ -35,6 +35,19 @@ function! s:ErrorMsg( text )
     echohl None
 endfunction
 
+function! s:EchoConceal( data, isShorten )
+    let [l:count, l:char, l:pattern] = a:data
+    echo printf('%3d ', l:count)
+    echohl Conceal
+	echon l:char
+    echohl None
+    call s:Echo(printf(' %s', l:pattern), a:isShorten)
+endfunction
+
+function! s:GetChar( count )
+    return get(split(g:Concealer_Characters_Global, '\zs'), a:count - 1, '')
+endfunction
+
 function! Concealer#Winbufdo( command )
     let l:buffers = []
 
@@ -52,14 +65,6 @@ function! Concealer#Winbufdo( command )
     silent! execute l:originalWindowLayout
 endfunction
 
-function! s:EchoConceal( data, isShorten )
-    let [l:count, l:char, l:pattern] = a:data
-    echo printf('%3d ', l:count)
-    echohl Conceal
-	echon l:char
-    echohl None
-    call s:Echo(printf(' %s', l:pattern), a:isShorten)
-endfunction
 
 
 function! s:SetConcealDefaults()
@@ -81,12 +86,15 @@ function! s:Conceal( scope, count, char, pattern )
 
     call s:SetConcealDefaults()
 endfunction
+
+
+
 let s:globalCount = 0
 let s:globalConceals = {}
 function! Concealer#UpdateCount( count )
     silent! execute printf('syntax clear ConcealerGlobal%d', a:count)
 
-    let l:char = get(split(g:Concealer_Characters_Global, '\zs'), a:count - 1, '')
+    let l:char = s:GetChar(a:count)
     for l:pattern in get(s:globalConceals, a:count, [])
 	call s:Conceal('Global', a:count, l:char, l:pattern)
     endfor
@@ -125,8 +133,7 @@ function! Concealer#AddPattern( isGlobal, count, pattern )
 	call Concealer#Winbufdo(printf('call Concealer#UpdateCount(%d)', l:count))
 	call s:EnsureUpdates()
 
-	let l:char = get(split(g:Concealer_Characters_Global, '\zs'), l:count - 1, '')
-	return [l:count, l:char, join(s:globalConceals[l:count], '\|')]
+	return [l:count, s:GetChar(l:count), join(s:globalConceals[l:count], '\|')]
     else
 	if a:count
 	    let l:count = a:count
@@ -167,7 +174,7 @@ function! Concealer#RemPattern( count, pattern )
     endif
 
     call Concealer#Winbufdo(printf('call Concealer#UpdateCount(%d)', a:count))
-    return [a:count, get(split(g:Concealer_Characters_Global, '\zs'), a:count - 1, ''), join(get(s:globalConceals, a:count, []), '\|')]
+    return [a:count, s:GetChar(a:count), join(get(s:globalConceals, a:count, []), '\|')]
 endfunction
 function! Concealer#RemLiteralText( count, text, isWholeWordSearch )
     let l:result = Concealer#RemPattern(a:count, ingosearch#LiteralTextToSearchPattern(a:text, a:isWholeWordSearch, '/'))
@@ -203,7 +210,7 @@ function! Concealer#List()
 
     let l:chars = split(g:Concealer_Characters_Global, '\zs')
     for l:count in sort(ingocollections#unique(range(1, len(l:chars)) + keys(s:globalConceals)), 'ingocollections#numsort')
-	call s:EchoConceal([l:count, get(l:chars, l:count - 1, ''), join(get(s:globalConceals, l:count, []), '\|')], 0)
+	call s:EchoConceal([l:count, s:GetChar(l:count), join(get(s:globalConceals, l:count, []), '\|')], 0)
     endfor
 endfunction
 
