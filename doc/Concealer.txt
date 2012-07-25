@@ -15,22 +15,106 @@ history				|Concealer-history|
 ==============================================================================
 DESCRIPTION					       *Concealer-description*
 
-This plugin ...
+Ever tried exploring a log file or complex configuration, and struggling to
+distinguish between 58343925-ae76-41f5-bf6e-4048484d9a5f and
+58343925-ae77-41f5-bf6e-404848489a5f, or trying to see the gist among 128-char
+security token monsters, IPv6 addresses, object IDs?
+This plugin adds mappings and commands to conceal the current word, selection,
+or regular expression pattern matches on the fly. Either globally, or just
+inside the current window, each concealed text is condensed to a single
+special character (or hidden completely); via [count], additional alternatives
+can be added / removed to such a conceal group. Since the text is only
+concealed, this doesn't touch the actual buffer contents, can be toggled
+on/off, and as a bonus there's even a command to list all defined groups and
+active patterns.
 
 HOW IT WORKS								     *
 
 SEE ALSO								     *
 
+- mark.vim (vimscript #2666) also offers mappings and commands to highlight,
+  not conceal, several patterns in different colors simultaneously.
+  If you just want to differentiate multiple patterns (without shrinking their
+  visual representation), use this plugin.
+- SearchAlternatives.vim (vimscript #0000) can also add and subtract
+  alternatives via mappings and commands, but to the search pattern, not
+  different conceal groups.
+
 RELATED WORKS								     *
 
 ==============================================================================
 USAGE							     *Concealer-usage*
-								 *<Leader>Foo*
-<Leader>Foo		Description here.
-							  *:Concealer*
-:Concealer	Description here.
 
-EXAMPLE							   *Concealer-example*
+The Concealer offers both global and buffer-local concealing. The former works
+like search highlighting; it applies to each buffer in every open window. The
+latter is only defined for the current buffer, and conceal defaults are only
+applied to the current window, so even window splits of the same buffer won't
+show a difference until you enable concealing in those windows, too.
+Since global concealing also offers finer control, it's recommended you use
+mainly that, and only employ buffer-local concealing when you just want to
+quickly get rid of a particular text fragment right there.
+
+
+{Visual}[count]<Leader>X+			   *<Leader>X+* *v_<Leader>X+*
+[count]<Leader>X+	Globally conceal the current whole \<word\> (similar
+			to the |star| command) / the selected text.
+			Without [count], the next free conceal group is used.
+			With [count], adds the pattern to the conceal group
+			[count] instead.
+			Concealment applies to all buffers. To conceal only in
+			the current buffer, use |<Leader>XX|.
+						   *<Leader>X-* *v_<Leader>X-*
+<Leader>X-		Stop concealing the current whole \<word\> / selected
+{Visual}<Leader>X-	text everywhere.
+[count]<Leader>X-	Stop concealing any patterns in conceal group [count].
+{Visual}<Leader>X-
+
+						   *<Leader>XX* *v_<Leader>XX*
+<Leader>XX		In the current buffer, conceal the current whole
+			\<word\> (similar to the |star| command) / the
+			selected text.
+			Without [count], the next free conceal group is used.
+			With [count], adds the pattern to the conceal group
+			[count] instead.
+			Concealment only applies to the current buffer. To
+			conceal globally in all buffers, or to selectively
+			remove patterns or individual conceal groups, use
+			|<Leader>X+| / |<Leader>X-|.
+			To remove the buffer-local conceal groups, you can use >
+			    :let &syn=&syn
+<			or reset 'filetype', or just reload the file via
+			|:edit|!
+
+								*:ConcealHere*
+:[count]ConcealHere {expr}
+			In the current buffer, conceal {expr}.
+			Without [count], the next free conceal group is used.
+			With [count], adds the pattern to the conceal group
+			[count] instead.
+			Concealment only applies to the current buffer. To
+			conceal globally in all buffers, or to selectively
+			remove patterns or individual conceal groups, use
+			|:ConcealAdd| / |:ConcealRemove|.
+								 *:ConcealAdd*
+:[count]ConcealAdd {expr}
+			Globally conceal {expr}.
+			Without [count], the next free conceal group is used.
+			With [count], adds the pattern to the conceal group
+			[count] instead.
+			Concealment applies to all buffers. To conceal only in
+			the current buffer, use |:ConcealHere|.
+							      *:ConcealRemove*
+:ConcealRemove {expr}	Stop concealing {expr} everywhere.
+:[count]ConcealRemove	Stop concealing any patterns in conceal group [count].
+:ConcealRemove!		Stop concealing anything in any conceal group.
+
+								   *:Conceals*
+:Conceals		List all conceal groups and the patterns defined for
+			them. The group number (for use as [count]), conceal
+			character and pattern are listed.
+			Unless there are buffer-local conceals, all global
+			groups are always listed (even when empty) so that you
+			can easily choose a proper group for easier recall.
 
 ==============================================================================
 INSTALLATION					      *Concealer-installation*
@@ -45,16 +129,36 @@ To uninstall, use the |:RmVimball| command.
 
 DEPENDENCIES					      *Concealer-dependencies*
 
-- Requires Vim 7.0 or higher.
+- Requires Vim 7.3 or higher with the |+conceal| feature.
 
 ==============================================================================
 CONFIGURATION					     *Concealer-configuration*
 
 For a permanent configuration, put the following commands into your |vimrc|:
 
-						*g:Concealer_MyOption*
-To change the default TODO from FOO to BAR, use: >
-    let g:Concealer_MyOption = 'BAR'
+For the first 11 conceal groups, different conceal characters (|:syn-cchar|)
+are preset to allow easy recognition of the concealed areas. All additional
+groups get the default conceal character defined in the 'listchars' option, or
+are completely hidden, depending on 'conceallevel').
+
+		*g:Concealer_Characters_Global* *g:Concealer_Characters_Local*
+As conceal characters, when possible, special characteristic Unicode
+characters are choosen. To change the set or number of characters: >
+    let g:Concealer_Characters_Global = '!@#$%^&*()_'
+    let g:Concealer_Characters_Local = '1234567890_'
+<
+						    *g:Concealer_ConcealLevel*
+By default, concealing is off; but Concealer automatically presets
+'conceallevel' when conceal groups are used, so that you immediately see the
+effects without manually reconfiguring concealment. This preset is applied
+only to the current window for local conceal groups, and to all windows once
+there have been global conceal groups. To disable the default preset: >
+    let g:Concealer_ConcealLevel = 0
+To completely hide the text, without conceal char: >
+    let g:Concealer_ConcealLevel = 3
+<						   *g:Concealer_ConcealCursor*
+Likewise, to change the 'concealcursor' preset: >
+    let g:Concealer_ConcealCursor = 'nv'
 <
 ==============================================================================
 INTEGRATION					       *Concealer-integration*
@@ -62,6 +166,13 @@ INTEGRATION					       *Concealer-integration*
 ==============================================================================
 LIMITATIONS					       *Concealer-limitations*
 
+- As the conceal feature is bound to the syntax highlighting, the original
+  filetype's syntax may interfere with Concealer, and vice versa. A workaround
+  is to temporarily turn off the filetype's syntax either locally >
+    :setl syn=
+< or globally >
+    :syntax off
+<
 KNOWN PROBLEMS					    *Concealer-known-problems*
 
 TODO							      *Concealer-todo*
