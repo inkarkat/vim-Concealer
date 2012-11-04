@@ -1,7 +1,7 @@
 " Concealer.vim: Manually conceal current word or selection.
 "
 " DEPENDENCIES:
-"   - Requires Vim 7.0 or higher.
+"   - Requires Vim 7.3 or higher with the +conceal feature.
 "   - ingointegration.vim autoload script
 "   - Concealer.vim autoload script
 "
@@ -11,12 +11,16 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
+"   1.00.002	25-Jul-2012	Add mappings and commands for conceal group
+"				removal.
+"				Add :Conceals command.
+"				Correct inclusion guard.
 "	001	24-Jul-2012	file creation
 
 scriptencoding utf-8
 
 " Avoid installing twice or when in unsupported Vim version.
-if exists('g:loaded_Concealer') || (v:version < 700)
+if exists('g:loaded_Concealer') || (v:version < 703) || ! has('conceal')
     finish
 endif
 let g:loaded_Concealer = 1
@@ -32,7 +36,7 @@ if ! exists('g:Concealer_Characters_Global')
 endif
 if ! exists('g:Concealer_Characters_Local')
     if &encoding ==# 'utf-8'
-	let g:Concealer_Characters_Local = 'ÅÇÐËÑßãðøÆ'
+	let g:Concealer_Characters_Local = 'ÅßÇÐËµðãøº'
     else
 	let g:Concealer_Characters_Local = 'ABCDEFGHo*'
     endif
@@ -48,8 +52,10 @@ endif
 
 "- commands --------------------------------------------------------------------
 
-command! -count -nargs=1 -complete=expression ConcealHere call Concealer#AddPattern(0, <count>, <q-args>)
-command! -count -nargs=1 -complete=expression ConcealAdd  call Concealer#AddPattern(1, <count>, <q-args>)
+command!       -count -nargs=1 -complete=expression ConcealHere   call Concealer#AddCommand(      0, <count>, <q-args>)
+command!       -count -nargs=1 -complete=expression ConcealAdd    call Concealer#AddCommand(      1, <count>, <q-args>)
+command! -bang -count -nargs=? -complete=expression ConcealRemove call Concealer#RemCommand(<bang>0, <count>, <q-args>)
+command! -bar Conceals call Concealer#List()
 
 
 "- mappings --------------------------------------------------------------------
@@ -69,6 +75,14 @@ endif
 vnoremap <silent> <Plug>(ConcealerAddGlobal) :<C-u>call Concealer#AddLiteralText(1, v:count, ingointegration#GetVisualSelection(), 0)<CR>
 if ! hasmapto('<Plug>(Concealer)', 'x')
     xmap <Leader>X+ <Plug>(ConcealerAddGlobal)
+endif
+nnoremap <silent> <Plug>(ConcealerRemGlobal) :<C-u>call Concealer#RemLiteralText(v:count, expand('<cword>'), 1)<CR>
+if ! hasmapto('<Plug>(ConcealerRemGlobal)', 'n')
+    nmap <Leader>X- <Plug>(ConcealerRemGlobal)
+endif
+vnoremap <silent> <Plug>(ConcealerRemGlobal) :<C-u>call Concealer#RemLiteralText(v:count, ingointegration#GetVisualSelection(), 0)<CR>
+if ! hasmapto('<Plug>(Concealer)', 'x')
+    xmap <Leader>X- <Plug>(ConcealerRemGlobal)
 endif
 
 " vim: set ts=8 sts=4 sw=4 noexpandtab ff=unix fdm=syntax :
