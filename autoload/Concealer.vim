@@ -11,6 +11,18 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
+"   1.00.002	25-Jul-2012	Add dedicated functions to back up the commands,
+"				so that error messages are printed.
+"				Add Concealer#List() and implement this for both
+"				global and local conceal groups (in different
+"				ways, due to the ways they are stored).
+"				Adapt s:SetConcealDefaults() to work on global
+"				conceal groups: Invoking on the first window of
+"				each buffer isn't sufficient, as it sets
+"				window-scoped stuff. Rather, apply once for
+"				local conceal groups, and for each window
+"				(repeated once when each tab page is entered)
+"				for global conceal groups.
 "	001	24-Jul-2012	file creation
 let s:save_cpo = &cpo
 set cpo&vim
@@ -73,13 +85,37 @@ endfunction
 
 
 
-function! s:SetConcealDefaults()
+function! s:SetDefaults()
     if ! empty(g:Concealer_ConcealLevel)
-	let &l:conceallevel = g:Concealer_ConcealLevel
+	let &conceallevel = g:Concealer_ConcealLevel
     endif
     if ! empty(g:Concealer_ConcealCursor)
-	let &l:concealcursor = g:Concealer_ConcealCursor
+	let &concealcursor = g:Concealer_ConcealCursor
     endif
+endfunction
+function! Concealer#SetGlobalConcealDefaults()
+    if exists('t:Concealer_DidDefaults')
+	return
+    endif
+    let t:Concealer_DidDefaults = 1
+
+    if empty(g:Concealer_ConcealLevel) && empty(g:Concealer_ConcealCursor)
+	return
+    endif
+
+    " Change both global and local settings, so that new buffers in that window
+    " and new windows inherit the settings.
+    " The global settting cannot be changed via setwinvar(), so we have to
+    " iterate through them.
+
+    let l:currentWinNr = winnr()
+    " By entering a window, its height is potentially increased from 0 to 1 (the
+    " minimum for the current window). To avoid any modification, save the window
+    " sizes and restore them after visiting all windows.
+    let l:originalWindowLayout = winrestcmd()
+	noautocmd windo call s:SetDefaults()
+    execute l:currentWinNr . 'wincmd w'
+    silent! execute l:originalWindowLayout
 endfunction
 
 function! s:Conceal( scope, count, char, pattern )
@@ -89,8 +125,6 @@ function! s:Conceal( scope, count, char, pattern )
     \   (empty(a:char) ? '' : 'cchar=' . a:char),
     \   a:pattern
     \)
-
-    call s:SetConcealDefaults()
 endfunction
 
 
@@ -134,7 +168,7 @@ function! s:EnsureUpdates()
 	augroup Concealer
 	    autocmd!
 	    autocmd BufWinEnter,Syntax * call Concealer#UpdateBuffer()
-	    autocmd TabEnter * call Concealer#Winbufdo('call Concealer#UpdateBuffer()')
+	    autocmd TabEnter * call Concealer#Winbufdo('call Concealer#UpdateBuffer()') | call Concealer#SetGlobalConcealDefaults()
 	augroup END
     endif
 endfunction
@@ -155,6 +189,7 @@ function! Concealer#AddPattern( isGlobal, count, pattern )
 	endif
 
 	call Concealer#Winbufdo(printf('call Concealer#UpdateCount(%d)', l:count))
+	call Concealer#SetGlobalConcealDefaults()
 	call s:EnsureUpdates()
 
 	return [l:count, s:GetChar(l:count), join(s:globalConceals[l:count], '\|')]
@@ -172,6 +207,7 @@ function! Concealer#AddPattern( isGlobal, count, pattern )
 	let l:char = get(split(g:Concealer_Characters_Local, '\zs'), l:count - 1, '')
 
 	call s:Conceal('Local', l:count, l:char, a:pattern)
+	call s:SetDefaults()
 	return [l:count, l:char, a:pattern]
     endif
 
