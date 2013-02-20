@@ -1,0 +1,6 @@
+autoload/ingocollections.vim
+autoload/ingointegration.vim
+autoload/ingosearch.vim
+autoload/Concealer.vim
+plugin/Concealer.vim
+doc/Concealer.txt
