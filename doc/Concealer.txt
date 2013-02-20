@@ -30,13 +30,15 @@ active patterns.
 
 HOW IT WORKS								     *
 
+This plugin is based on the |conceal| feature introduced in Vim 7.3.
+
 SEE ALSO								     *
 
 - mark.vim (vimscript #2666) also offers mappings and commands to highlight,
   not conceal, several patterns in different colors simultaneously.
   If you just want to differentiate multiple patterns (without shrinking their
   visual representation), use this plugin.
-- SearchAlternatives.vim (vimscript #0000) can also add and subtract
+- SearchAlternatives.vim (vimscript #4146) can also add and subtract
   alternatives via mappings and commands, but to the search pattern, not
   different conceal groups.
 
