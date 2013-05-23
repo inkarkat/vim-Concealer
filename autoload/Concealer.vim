@@ -1,16 +1,17 @@
 " Concealer.vim: Manually conceal current word or selection.
 "
 " DEPENDENCIES:
-"   - ingocollections.vim autoload script
+"   - ingo/collections.vim autoload script
 "   - ingosearch.vim autoload script
 "   - EchoWithoutScrolling.vim (optional)
 "
-" Copyright: (C) 2012 Ingo Karkat
+" Copyright: (C) 2012-2013 Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'.
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
+"   1.00.003	21-Feb-2013	Move ingocollections.vim to ingo-library.
 "   1.00.002	25-Jul-2012	Add dedicated functions to back up the commands,
 "				so that error messages are printed.
 "				Add Concealer#List() and implement this for both
@@ -344,7 +345,7 @@ function! Concealer#ListGlobal()
     echo 'cnt char  pattern'
     echohl None
 
-    for l:count in sort(ingocollections#unique(range(1, s:GetCharSize()) + keys(s:globalConceals)), 'ingocollections#numsort')
+    for l:count in sort(ingo#collections#Unique(range(1, s:GetCharSize()) + keys(s:globalConceals)), 'ingo#collections#numsort')
 	call s:EchoConceal([l:count, s:GetChar(l:count), join(get(s:globalConceals, l:count, []), '\|')], 0)
     endfor
 endfunction
