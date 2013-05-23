@@ -11,6 +11,8 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
+"   1.00.003	05-Nov-2012	Remove -complete=expression; it's not useful for
+"				completing regexp patterns.
 "   1.00.002	25-Jul-2012	Add mappings and commands for conceal group
 "				removal.
 "				Add :Conceals command.
@@ -52,9 +54,9 @@ endif
 
 "- commands --------------------------------------------------------------------
 
-command!       -count -nargs=1 -complete=expression ConcealHere   call Concealer#AddCommand(      0, <count>, <q-args>)
-command!       -count -nargs=1 -complete=expression ConcealAdd    call Concealer#AddCommand(      1, <count>, <q-args>)
-command! -bang -count -nargs=? -complete=expression ConcealRemove call Concealer#RemCommand(<bang>0, <count>, <q-args>)
+command!       -count -nargs=1 ConcealHere   call Concealer#AddCommand(      0, <count>, <q-args>)
+command!       -count -nargs=1 ConcealAdd    call Concealer#AddCommand(      1, <count>, <q-args>)
+command! -bang -count -nargs=? ConcealRemove call Concealer#RemCommand(<bang>0, <count>, <q-args>)
 command! -bar Conceals call Concealer#List()
 
 
