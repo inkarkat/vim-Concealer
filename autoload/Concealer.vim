@@ -2,7 +2,7 @@
 "
 " DEPENDENCIES:
 "   - ingo/collections.vim autoload script
-"   - ingosearch.vim autoload script
+"   - ingo/regexp.vim autoload script
 "   - EchoWithoutScrolling.vim (optional)
 "
 " Copyright: (C) 2012-2013 Ingo Karkat
@@ -11,6 +11,7 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
+"   1.00.004	24-May-2013	Move ingosearch.vim to ingo-library.
 "   1.00.003	21-Feb-2013	Move ingocollections.vim to ingo-library.
 "   1.00.002	25-Jul-2012	Add dedicated functions to back up the commands,
 "				so that error messages are printed.
@@ -214,7 +215,7 @@ function! Concealer#AddPattern( isGlobal, count, pattern )
 
 endfunction
 function! Concealer#AddLiteralText( isGlobal, count, text, isWholeWordSearch )
-    let l:result = Concealer#AddPattern(a:isGlobal, a:count, ingosearch#LiteralTextToSearchPattern(a:text, a:isWholeWordSearch, '/'))
+    let l:result = Concealer#AddPattern(a:isGlobal, a:count, ingo#regexp#FromLiteralText(a:text, a:isWholeWordSearch, '/'))
 
     call s:EchoConceal(l:result, 1)
 endfunction
@@ -265,7 +266,7 @@ function! Concealer#RemLiteralText( count, text, isWholeWordSearch )
     if a:count
 	let l:result = Concealer#RemPattern(a:count, '')
     else
-	let l:result = Concealer#RemPattern(a:count, ingosearch#LiteralTextToSearchPattern(a:text, a:isWholeWordSearch, '/'))
+	let l:result = Concealer#RemPattern(a:count, ingo#regexp#FromLiteralText(a:text, a:isWholeWordSearch, '/'))
     endif
     if empty(l:result)
 	" The text wasn't found; inform the user via a bell.
