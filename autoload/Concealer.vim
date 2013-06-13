@@ -1,9 +1,9 @@
 " Concealer.vim: Manually conceal current word or selection.
 "
 " DEPENDENCIES:
+"   - ingo/avoidprompt.vim autoload script
 "   - ingo/collections.vim autoload script
 "   - ingo/regexp.vim autoload script
-"   - EchoWithoutScrolling.vim (optional)
 "
 " Copyright: (C) 2012-2013 Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'.
@@ -11,6 +11,7 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
+"   1.00.005	07-Jun-2013	Move EchoWithoutScrolling.vim into ingo-library.
 "   1.00.004	24-May-2013	Move ingosearch.vim to ingo-library.
 "   1.00.003	21-Feb-2013	Move ingocollections.vim to ingo-library.
 "   1.00.002	25-Jul-2012	Add dedicated functions to back up the commands,
@@ -29,18 +30,11 @@
 let s:save_cpo = &cpo
 set cpo&vim
 
-" Use EchoWithoutScrolling#Echo to emulate the built-in truncation of the search
-" pattern (via ':set shortmess+=T').
-silent! call EchoWithoutScrolling#MaxLength()	" Execute a function to force autoload.
-if exists('*EchoWithoutScrolling#Echo')
-    function! s:Echo( msg, isShorten )
-	echon (a:isShorten ? EchoWithoutScrolling#Truncate(EchoWithoutScrolling#TranslateLineBreaks(a:msg), 6) : a:msg)
-    endfunction
-else " fallback
-    function! s:Echo( msg, isShorten )
-	echon a:msg
-    endfunction
-endif
+" Use something like ingo#avoidprompt#EchoAsSingleLine() to emulate the built-in
+" truncation of the search pattern (via ':set shortmess+=T').
+function! s:Echo( msg, isShorten )
+    echon (a:isShorten ? ingo#avoidprompt#Truncate(ingo#avoidprompt#TranslateLineBreaks(a:msg), 6) : a:msg)
+endfunction
 
 function! s:ErrorMsg( text )
     echohl ErrorMsg
