@@ -2,15 +2,17 @@
 "
 " DEPENDENCIES:
 "   - Requires Vim 7.3 or higher with the +conceal feature.
-"   - ingointegration.vim autoload script
+"   - ingo/selection.vim autoload script
 "   - Concealer.vim autoload script
 "
-" Copyright: (C) 2012 Ingo Karkat
+" Copyright: (C) 2012-2013 Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'.
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
+"   1.00.004	24-May-2013	Move ingointegration#GetVisualSelection() into
+"				ingo-library.
 "   1.00.003	05-Nov-2012	Remove -complete=expression; it's not useful for
 "				completing regexp patterns.
 "   1.00.002	25-Jul-2012	Add mappings and commands for conceal group
@@ -66,7 +68,7 @@ nnoremap <silent> <Plug>(ConcealerAddLocal) :<C-u>call Concealer#AddLiteralText(
 if ! hasmapto('<Plug>(ConcealerAddLocal)', 'n')
     nmap <Leader>XX <Plug>(ConcealerAddLocal)
 endif
-vnoremap <silent> <Plug>(ConcealerAddLocal) :<C-u>call Concealer#AddLiteralText(0, v:count, ingointegration#GetVisualSelection(), 0)<CR>
+vnoremap <silent> <Plug>(ConcealerAddLocal) :<C-u>call Concealer#AddLiteralText(0, v:count, ingo#selection#Get(), 0)<CR>
 if ! hasmapto('<Plug>(Concealer)', 'x')
     xmap <Leader>XX <Plug>(ConcealerAddLocal)
 endif
@@ -74,7 +76,7 @@ nnoremap <silent> <Plug>(ConcealerAddGlobal) :<C-u>call Concealer#AddLiteralText
 if ! hasmapto('<Plug>(ConcealerAddGlobal)', 'n')
     nmap <Leader>X+ <Plug>(ConcealerAddGlobal)
 endif
-vnoremap <silent> <Plug>(ConcealerAddGlobal) :<C-u>call Concealer#AddLiteralText(1, v:count, ingointegration#GetVisualSelection(), 0)<CR>
+vnoremap <silent> <Plug>(ConcealerAddGlobal) :<C-u>call Concealer#AddLiteralText(1, v:count, ingo#selection#Get(), 0)<CR>
 if ! hasmapto('<Plug>(Concealer)', 'x')
     xmap <Leader>X+ <Plug>(ConcealerAddGlobal)
 endif
@@ -82,7 +84,7 @@ nnoremap <silent> <Plug>(ConcealerRemGlobal) :<C-u>call Concealer#RemLiteralText
 if ! hasmapto('<Plug>(ConcealerRemGlobal)', 'n')
     nmap <Leader>X- <Plug>(ConcealerRemGlobal)
 endif
-vnoremap <silent> <Plug>(ConcealerRemGlobal) :<C-u>call Concealer#RemLiteralText(v:count, ingointegration#GetVisualSelection(), 0)<CR>
+vnoremap <silent> <Plug>(ConcealerRemGlobal) :<C-u>call Concealer#RemLiteralText(v:count, ingo#selection#Get(), 0)<CR>
 if ! hasmapto('<Plug>(Concealer)', 'x')
     xmap <Leader>X- <Plug>(ConcealerRemGlobal)
 endif
