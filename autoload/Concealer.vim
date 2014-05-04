@@ -11,6 +11,8 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
+"   1.00.006	14-Jun-2013	Minor: Make matchstr() robust against
+"				'ignorecase'.
 "   1.00.005	07-Jun-2013	Move EchoWithoutScrolling.vim into ingo-library.
 "   1.00.004	24-May-2013	Move ingosearch.vim to ingo-library.
 "   1.00.003	21-Feb-2013	Move ingocollections.vim to ingo-library.
@@ -295,7 +297,7 @@ function! Concealer#RemCommand( isForce, count, pattern )
 endfunction
 
 function! s:ParseSyntaxOutput( syntaxLine )
-    return matchlist(a:syntaxLine, '^\%(ConcealerLocal\(\d\+\)\s.\{-}\)\?\s\+match /\(.*\)/')[1:2]
+    return matchlist(a:syntaxLine, '\C^\%(ConcealerLocal\(\d\+\)\s.\{-}\)\?\s\+match /\(.*\)/')[1:2]
 endfunction
 function! Concealer#ListLocal()
     if ! exists('b:Concealer_Count') || b:Concealer_Count == 0
