@@ -3,14 +3,16 @@
 " DEPENDENCIES:
 "   - ingo/avoidprompt.vim autoload script
 "   - ingo/collections.vim autoload script
+"   - ingo/err.vim autoload script
 "   - ingo/regexp.vim autoload script
 "
-" Copyright: (C) 2012-2013 Ingo Karkat
+" Copyright: (C) 2012-2014 Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'.
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
+"   1.00.007	05-May-2014	Abort :ConcealRemove on error.
 "   1.00.006	14-Jun-2013	Minor: Make matchstr() robust against
 "				'ignorecase'.
 "   1.00.005	07-Jun-2013	Move EchoWithoutScrolling.vim into ingo-library.
@@ -36,13 +38,6 @@ set cpo&vim
 " truncation of the search pattern (via ':set shortmess+=T').
 function! s:Echo( msg, isShorten )
     echon (a:isShorten ? ingo#avoidprompt#Truncate(ingo#avoidprompt#TranslateLineBreaks(a:msg), 6) : a:msg)
-endfunction
-
-function! s:ErrorMsg( text )
-    echohl ErrorMsg
-    let v:errmsg = a:text
-    echomsg v:errmsg
-    echohl None
 endfunction
 
 function! s:EchoConceal( data, isShorten )
@@ -278,21 +273,23 @@ function! Concealer#AddCommand( isGlobal, count, pattern )
 endfunction
 function! Concealer#RemCommand( isForce, count, pattern )
     if ! a:count && empty(a:pattern) && ! a:isForce
-	call s:ErrorMsg('Neither count nor pattern given (add ! to clear all conceals)')
-	return
+	call ingo#err#Set('Neither count nor pattern given (add ! to clear all conceals)')
+	return 0
     endif
 
     let l:result = Concealer#RemPattern(a:count, a:pattern)
     if empty(l:result)
-	call s:ErrorMsg(empty(a:pattern) ?
+	call ingo#err#Set(empty(a:pattern) ?
 	\   printf('No conceal %d defined', a:count) :
 	\   (a:count ?
 	\       printf('Pattern not found in %s', join(get(s:globalConceals, a:count, ['(empty conceal)']), '\|')) :
 	\       'Pattern not found'
 	\   )
 	\)
+	return 0
     else
 	call s:EchoConceal(l:result, 0)
+	return 1
     endif
 endfunction
 
