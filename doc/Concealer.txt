@@ -41,6 +41,8 @@ SEE ALSO								     *
 - SearchAlternatives.vim (vimscript #4146) can also add and subtract
   alternatives via mappings and commands, but to the search pattern, not
   different conceal groups.
+- FoldCol (http://www.drchip.org/astronaut/vim/index.html#FOLDCOL) can fold
+  away a blockwise visual selection in a buffer.
 
 RELATED WORKS								     *
 
