@@ -42,8 +42,8 @@ function! s:Echo( msg, isShorten )
 endfunction
 
 function! s:EchoConceal( data, isShorten )
-    let [l:count, l:char, l:pattern] = a:data
-    echo printf('%3d ', l:count)
+    let [l:key, l:char, l:pattern] = a:data
+    echo printf('%3s ', l:key)
     echohl Conceal
 	echon (empty(l:char) ? ' ' : l:char)
     echohl None
@@ -327,6 +327,7 @@ function! Concealer#HereCommand( isBang, count, pattern )
 		" Remove all local conceals.
 		silent! execute 'syntax clear' join(map(keys(b:Concealer_Local), '"ConcealerLocal" . v:val'))
 		let b:Concealer_Local = {}
+		return 1
 	    endif
 	else
 	    if a:count == 0
@@ -349,7 +350,12 @@ function! Concealer#HereCommand( isBang, count, pattern )
 endfunction
 
 function! s:ParseSyntaxOutput( syntaxLine )
-    return matchlist(a:syntaxLine, '\C^\%(ConcealerLocal\(\w\+\)\s.\{-}\)\?\s\+match /\(.*\)/')[1:2]
+    " With [[:alnum:]], parse both counts created by the :ConcealHere command as
+    " well as special keys from Concealer#AddLocal(), but allow to "hide"
+    " conceals from the list by using an (allowed) underscore "_" character in
+    " the key.
+    let l:matches = matchlist(a:syntaxLine, '\C^\%(ConcealerLocal\([[:alnum:]]\+\)\s.\{-}\)\?\s\+match /\(.*\)/')
+    return (empty(l:matches) ? ['', ''] : l:matches[1:2])
 endfunction
 function! Concealer#ListLocal()
     if ! exists('b:Concealer_Local') || len(b:Concealer_Local) == 0
@@ -368,23 +374,23 @@ function! Concealer#ListLocal()
     echo 'cnt char  pattern (buffer-local)'
     echohl None
 
-    let l:prevCount = 0
+    let l:prevKey = ''
     let l:patterns = []
     for l:line in l:concealSyntax
-	let [l:count, l:pattern] = s:ParseSyntaxOutput(l:line)
-	if empty(l:count)
-	    let l:count = l:prevCount
+	let [l:key, l:pattern] = s:ParseSyntaxOutput(l:line)
+	if empty(l:key)
+	    let l:key = l:prevKey
 	    call add(l:patterns, l:pattern)
 	else
-	    if l:prevCount > 0
-		call s:EchoConceal([l:prevCount, s:GetLocalChar(l:prevCount), join(l:patterns, '\|')], 1)
+	    if ! empty(l:prevKey)
+		call s:EchoConceal([l:prevKey, s:GetLocalChar(l:prevKey), join(l:patterns, '\|')], 1)
 	    endif
-	    let l:prevCount = l:count
+	    let l:prevKey = l:key
 	    let l:patterns = [l:pattern]
 	endif
     endfor
-    if l:prevCount > 0
-	call s:EchoConceal([l:prevCount, s:GetLocalChar(l:prevCount), join(l:patterns, '\|')], 1)
+    if ! empty(l:prevKey)
+	call s:EchoConceal([l:prevKey, s:GetLocalChar(l:prevKey), join(l:patterns, '\|')], 1)
     endif
 
     return 1
