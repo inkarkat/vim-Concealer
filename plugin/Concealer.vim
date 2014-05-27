@@ -2,15 +2,17 @@
 "
 " DEPENDENCIES:
 "   - Requires Vim 7.3 or higher with the +conceal feature.
+"   - ingo/err.vim autoload script
 "   - ingo/selection.vim autoload script
 "   - Concealer.vim autoload script
 "
-" Copyright: (C) 2012-2013 Ingo Karkat
+" Copyright: (C) 2012-2014 Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'.
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
+"   1.00.005	05-May-2014	Abort :ConcealRemove on error.
 "   1.00.004	24-May-2013	Move ingointegration#GetVisualSelection() into
 "				ingo-library.
 "   1.00.003	05-Nov-2012	Remove -complete=expression; it's not useful for
@@ -58,7 +60,7 @@ endif
 
 command!       -count -nargs=1 ConcealHere   call Concealer#AddCommand(      0, <count>, <q-args>)
 command!       -count -nargs=1 ConcealAdd    call Concealer#AddCommand(      1, <count>, <q-args>)
-command! -bang -count -nargs=? ConcealRemove call Concealer#RemCommand(<bang>0, <count>, <q-args>)
+command! -bang -count -nargs=? ConcealRemove if ! Concealer#RemCommand(<bang>0, <count>, <q-args>) | echoerr ingo#err#Get() | endif
 command! -bar Conceals call Concealer#List()
 
 
