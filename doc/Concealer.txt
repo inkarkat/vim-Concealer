@@ -99,6 +99,14 @@ quickly get rid of a particular text fragment right there.
 			conceal globally in all buffers, or to selectively
 			remove patterns or individual conceal groups, use
 			|:ConcealAdd| / |:ConcealRemove|.
+:[count]ConcealHere!	In the current buffer, stop concealing local group
+			[count] / all local groups defined by |:ConcealHere|
+			and <Leader>XX.
+:{count}ConcealHere! {expr}
+			In the current buffer, toggle concealing {expr}: If
+			the conceal group {count} is free, it starts
+			concealing {expr}, if it's not, the group is cleared.
+
 								 *:ConcealAdd*
 :[count]ConcealAdd {expr}
 			Globally conceal {expr}.
@@ -169,6 +177,12 @@ Likewise, to change the 'concealcursor' preset: >
 ==============================================================================
 INTEGRATION					       *Concealer-integration*
 
+You can use Concealer#AddLocal() and Concealer#RemoveLocal() to define custom,
+buffer-local concealments. This supports custom a:char. Choose a non-numeric,
+alphabetic a:key to avoid interfering with the conceal groups defined by the
+plugin. If you include an underscore character, the definition will be hidden
+from the |:Conceals| output.
+
 ==============================================================================
 LIMITATIONS					       *Concealer-limitations*
 
@@ -195,7 +209,7 @@ First published version.
 Started development.
 
 ==============================================================================
-Copyright: (C) 2012-2013 Ingo Karkat
+Copyright: (C) 2012-2014 Ingo Karkat
 The VIM LICENSE applies to this plugin; see |copyright|.
 
 Maintainer:	Ingo Karkat <ingo@karkat.de>
