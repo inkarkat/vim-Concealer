@@ -3,6 +3,7 @@
 " DEPENDENCIES:
 "   - ingo/avoidprompt.vim autoload script
 "   - ingo/collections.vim autoload script
+"   - ingo/dict/find.vim autoload script
 "   - ingo/err.vim autoload script
 "   - ingo/regexp.vim autoload script
 "
@@ -12,6 +13,9 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
+"   1.00.009	29-May-2014	Implement toggling of {expr} without a passed
+"				[count]: Determine the key by searching the
+"				b:Concealer_Local for the a:pattern.
 "   1.00.008	28-May-2014	:syn match doesn't support keepend.
 "				Support extended :ConcealHere! via dedicated
 "				Expose Concealer#AddLocal() and
@@ -347,9 +351,13 @@ function! Concealer#HereCommand( isBang, key, pattern, ... )
 		return 1
 	    endif
 	else
-	    if empty(a:key)
-		call ingo#err#Set('Can only toggle with passed {count}')
-		return 0
+	    if empty(a:key) && exists('b:Concealer_Local')
+		let l:key = ingo#dict#find#FirstKey(b:Concealer_Local, a:pattern, 'ingo#collections#numsort')
+		if ! empty(l:key)
+		    call Concealer#RemoveLocal(l:key)
+		    echo printf('No conceal of pattern %s', a:pattern)
+		    return 2
+		endif
 	    endif
 
 	    if exists('b:Concealer_Local') && has_key(b:Concealer_Local, a:key)
