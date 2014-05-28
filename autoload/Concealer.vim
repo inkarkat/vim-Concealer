@@ -16,6 +16,10 @@
 "   1.00.009	29-May-2014	Implement toggling of {expr} without a passed
 "				[count]: Determine the key by searching the
 "				b:Concealer_Local for the a:pattern.
+"				Rename Concealer#HereCommand() to
+"				Concealer#Here().
+"				Add Concealer#ToggleLiteralHere() for the
+"				toggling-extended <Leader>XX mappings.
 "   1.00.008	28-May-2014	:syn match doesn't support keepend.
 "				Support extended :ConcealHere! via dedicated
 "				Expose Concealer#AddLocal() and
@@ -324,7 +328,7 @@ function! Concealer#RemoveLocal( key )
     silent! unlet! b:Concealer_Local[a:key]
     return 1
 endfunction
-function! Concealer#HereCommand( isBang, key, pattern, ... )
+function! Concealer#Here( isBang, key, pattern, ... )
     if ! a:isBang
 	if a:0
 	    call Concealer#AddLocal(a:key, a:1, a:pattern)
@@ -355,7 +359,7 @@ function! Concealer#HereCommand( isBang, key, pattern, ... )
 		let l:key = ingo#dict#find#FirstKey(b:Concealer_Local, a:pattern, 'ingo#collections#numsort')
 		if ! empty(l:key)
 		    call Concealer#RemoveLocal(l:key)
-		    echo printf('No conceal of pattern %s', a:pattern)
+		    call s:Echo(printf('No conceal of pattern %s', a:pattern), 1)
 		    return 2
 		endif
 	    endif
@@ -366,19 +370,27 @@ function! Concealer#HereCommand( isBang, key, pattern, ... )
 		    return 0
 		endif
 		call Concealer#RemoveLocal(a:key)
-		echo printf('No conceal of pattern %s', a:pattern)
+		call s:Echo(printf('No conceal of pattern %s', a:pattern), 1)
 		return 2
 	    else
 		if a:0
 		    call Concealer#AddLocal(a:key, a:1, a:pattern)
+		    call s:EchoConceal([a:key, a:1, a:pattern], 1)
 		else
-		    call Concealer#AddPattern(0, a:key, a:pattern)
+		    let l:result = Concealer#AddPattern(0, a:key, a:pattern)
+		    call s:EchoConceal(l:result, 1)
 		endif
-		echo printf('Conceal pattern %s', a:pattern)
 		return 1
 	    endif
 	endif
     endif
+endfunction
+function! Concealer#ToggleLiteralHere( count, text, isWholeWordSearch )
+    if empty(a:text)
+	execute "normal! \<C-\>\<C-n>\<Esc>" | " Beep.
+	return
+    endif
+    call Concealer#Here(1, a:count, ingo#regexp#FromLiteralText(a:text, a:isWholeWordSearch, '/'))
 endfunction
 
 function! s:ParseSyntaxOutput( syntaxLine )
@@ -429,7 +441,7 @@ function! Concealer#ListLocal()
 endfunction
 function! Concealer#ListGlobal()
     echohl Title
-    echo 'cnt char  pattern'
+    echo 'cnt  char pattern'
     echohl None
 
     for l:count in sort(ingo#collections#Unique(range(1, s:GetCharSize()) + keys(s:globalConceals)), 'ingo#collections#numsort')
