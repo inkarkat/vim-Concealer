@@ -13,6 +13,12 @@
 "
 " REVISION	DATE		REMARKS
 "   1.00.008	28-May-2014	:syn match doesn't support keepend.
+"				Support extended :ConcealHere! via dedicated
+"				Expose Concealer#AddLocal() and
+"				Concealer#RemoveLocal() that also handle custom
+"				a:char and non-numeric a:count => a:key.
+"				Concealer#HereCommand().
+"				Improve s:EchoConceal formatting.
 "   1.00.007	05-May-2014	Abort :ConcealRemove on error.
 "   1.00.006	14-Jun-2013	Minor: Make matchstr() robust against
 "				'ignorecase'.
@@ -43,11 +49,15 @@ endfunction
 
 function! s:EchoConceal( data, isShorten )
     let [l:key, l:char, l:pattern] = a:data
-    echo printf('%3s ', l:key)
+    if l:key =~# '^\d\+$'
+	echo printf('%3d    ', l:key)
+    else
+	echo printf('%-6s ', l:key)
+    endif
     echohl Conceal
 	echon (empty(l:char) ? ' ' : l:char)
     echohl None
-    call s:Echo(printf(' %s', l:pattern), a:isShorten)
+    call s:Echo(printf("  %s", l:pattern), a:isShorten)
 endfunction
 
 function! s:GetLocalChar( count )
@@ -296,6 +306,9 @@ function! Concealer#RemCommand( isForce, count, pattern )
 endfunction
 
 function! Concealer#AddLocal( key, char, pattern )
+    if ! exists('b:Concealer_Local')
+	let b:Concealer_Local = {}
+    endif
     let b:Concealer_Local[a:key] = a:pattern
 
     call s:Conceal('Local', a:key, a:char, a:pattern)
@@ -307,17 +320,21 @@ function! Concealer#RemoveLocal( key )
     silent! unlet! b:Concealer_Local[a:key]
     return 1
 endfunction
-function! Concealer#HereCommand( isBang, count, pattern )
+function! Concealer#HereCommand( isBang, key, pattern, ... )
     if ! a:isBang
-	call Concealer#AddCommand(0, a:count, a:pattern)
+	if a:0
+	    call Concealer#AddLocal(a:key, a:1, a:pattern)
+	else
+	    call Concealer#AddCommand(0, a:key, a:pattern)
+	endif
 	return 1
     else
 	if empty(a:pattern)
-	    if a:count
-		if exists('b:Concealer_Local') && has_key(b:Concealer_Local, a:count)
-		    return Concealer#RemoveLocal(a:count)
+	    if ! empty(a:key)
+		if exists('b:Concealer_Local') && has_key(b:Concealer_Local, a:key)
+		    return Concealer#RemoveLocal(a:key)
 		else
-		    call ingo#err#Set(printf('No local conceal %d defined', a:count))
+		    call ingo#err#Set(printf('No local conceal %s defined', a:key))
 		    return 0
 		endif
 	    elseif ! exists('b:Concealer_Local') || len(b:Concealer_Local) == 0
@@ -330,19 +347,26 @@ function! Concealer#HereCommand( isBang, count, pattern )
 		return 1
 	    endif
 	else
-	    if a:count == 0
+	    if empty(a:key)
 		call ingo#err#Set('Can only toggle with passed {count}')
 		return 0
 	    endif
 
-	    if exists('b:Concealer_Local') && has_key(b:Concealer_Local, a:count)
-		if b:Concealer_Local[a:count] !=# a:pattern
-		    call ingo#err#Set(printf('Passed pattern "%s" does not match existing definition "%s"', a:pattern, b:Concealer_Local[a:count]))
+	    if exists('b:Concealer_Local') && has_key(b:Concealer_Local, a:key)
+		if b:Concealer_Local[a:key] !=# a:pattern
+		    call ingo#err#Set(printf('Passed pattern "%s" does not match existing definition "%s"', a:pattern, b:Concealer_Local[a:key]))
 		    return 0
 		endif
-		return Concealer#RemoveLocal(a:count)
+		call Concealer#RemoveLocal(a:key)
+		echo printf('No conceal of pattern %s', a:pattern)
+		return 2
 	    else
-		call Concealer#AddCommand(0, a:count, a:pattern)
+		if a:0
+		    call Concealer#AddLocal(a:key, a:1, a:pattern)
+		else
+		    call Concealer#AddPattern(0, a:key, a:pattern)
+		endif
+		echo printf('Conceal pattern %s', a:pattern)
 		return 1
 	    endif
 	endif
@@ -354,8 +378,8 @@ function! s:ParseSyntaxOutput( syntaxLine )
     " well as special keys from Concealer#AddLocal(), but allow to "hide"
     " conceals from the list by using an (allowed) underscore "_" character in
     " the key.
-    let l:matches = matchlist(a:syntaxLine, '\C^\%(ConcealerLocal\([[:alnum:]]\+\)\s.\{-}\)\?\s\+match /\(.*\)/')
-    return (empty(l:matches) ? ['', ''] : l:matches[1:2])
+    let l:matches = matchlist(a:syntaxLine, '\C^\%(ConcealerLocal\([[:alnum:]]\+\)\s.\{-}\)\?\s\+match \([[:alnum:]\\"|]\@![\x00-\xFF]\)\(.*\)\2')
+    return (empty(l:matches) ? ['', ''] : [l:matches[1], l:matches[3]])
 endfunction
 function! Concealer#ListLocal()
     if ! exists('b:Concealer_Local') || len(b:Concealer_Local) == 0
@@ -371,7 +395,7 @@ function! Concealer#ListLocal()
     endif
 
     echohl Title
-    echo 'cnt char  pattern (buffer-local)'
+    echo 'cnt  char pattern (buffer-local)'
     echohl None
 
     let l:prevKey = ''
