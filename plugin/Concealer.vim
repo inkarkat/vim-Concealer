@@ -58,7 +58,7 @@ endif
 
 "- commands --------------------------------------------------------------------
 
-command!       -count -nargs=1 ConcealHere   call Concealer#AddCommand(      0, <count>, <q-args>)
+command! -bang -count -nargs=* ConcealHere   if ! Concealer#HereCommand(<bang>0,<count>, <q-args>) | echoerr ingo#err#Get() | endif
 command!       -count -nargs=1 ConcealAdd    call Concealer#AddCommand(      1, <count>, <q-args>)
 command! -bang -count -nargs=? ConcealRemove if ! Concealer#RemCommand(<bang>0, <count>, <q-args>) | echoerr ingo#err#Get() | endif
 command! -bar Conceals call Concealer#List()
