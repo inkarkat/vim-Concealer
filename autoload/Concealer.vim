@@ -16,6 +16,15 @@
 "   1.00.010	01-Jun-2014	Refactor listing of local conceals to use the
 "				b:Concealer_Local values instead of parsing the
 "				:syntax output.
+"				Also make local conceals persist on syntax
+"				changes by creating an analog
+"				Concealer#UpdateLocalCount() and hooking it into
+"				the autocmds, which are now also activated on
+"				Concealer#AddLocal().
+"				After a change of syntax, 'conceallevel' may
+"				have been reset; trigger (now exposed)
+"				Concealer#SetDefaults() on the Syntax event,
+"				too.
 "   1.00.009	29-May-2014	Implement toggling of {expr} without a passed
 "				[count]: Determine the key by searching the
 "				b:Concealer_Local for the a:pattern.
@@ -103,7 +112,7 @@ endfunction
 
 
 
-function! s:SetDefaults()
+function! Concealer#SetDefaults()
     if ! empty(g:Concealer_ConcealLevel)
 	let &conceallevel = g:Concealer_ConcealLevel
     endif
@@ -131,7 +140,7 @@ function! Concealer#SetGlobalConcealDefaults()
     " minimum for the current window). To avoid any modification, save the window
     " sizes and restore them after visiting all windows.
     let l:originalWindowLayout = winrestcmd()
-	noautocmd windo call s:SetDefaults()
+	noautocmd windo call Concealer#SetDefaults()
     execute l:currentWinNr . 'wincmd w'
     silent! execute l:originalWindowLayout
 endfunction
@@ -168,6 +177,13 @@ function! s:Cycle()
     return s:globalCount
 endfunction
 
+function! Concealer#UpdateLocalCount( count )
+    silent! execute printf('syntax clear ConcealerLocal%s', a:count)
+
+    let l:char = s:GetLocalChar(a:count)
+    let l:pattern = get(b:Concealer_Local, a:count, '')
+    call s:Conceal('Local', a:count, l:char, l:pattern)
+endfunction
 function! Concealer#UpdateCount( count )
     silent! execute printf('syntax clear ConcealerGlobal%d', a:count)
 
@@ -176,17 +192,24 @@ function! Concealer#UpdateCount( count )
 	call s:Conceal('Global', a:count, l:char, l:pattern)
     endfor
 endfunction
-function! Concealer#UpdateBuffer()
+function! Concealer#UpdateBuffer( isUpdateLocal )
     for l:count in keys(s:globalConceals)
 	call Concealer#UpdateCount(l:count)
     endfor
+
+    if a:isUpdateLocal && exists('b:Concealer_Local')
+	for l:count in keys(b:Concealer_Local)
+	    call Concealer#UpdateLocalCount(l:count)
+	endfor
+    endif
 endfunction
 function! s:EnsureUpdates()
     if ! exists('#Concealer')
 	augroup Concealer
 	    autocmd!
-	    autocmd BufWinEnter,Syntax * call Concealer#UpdateBuffer()
-	    autocmd TabEnter * call Concealer#Winbufdo('call Concealer#UpdateBuffer()') | call Concealer#SetGlobalConcealDefaults()
+	    autocmd BufWinEnter,Syntax * call Concealer#UpdateBuffer(1)
+	    autocmd Syntax             * call Concealer#SetDefaults()
+	    autocmd TabEnter * call Concealer#Winbufdo('call Concealer#UpdateBuffer(0)') | call Concealer#SetGlobalConcealDefaults()
 	augroup END
     endif
 endfunction
@@ -252,7 +275,7 @@ function! Concealer#RemPattern( count, pattern )
 		" remove the syntax definitions.
 		let s:globalConceals[l:count] = []
 	    endfor
-	    call Concealer#Winbufdo('call Concealer#UpdateBuffer()')
+	    call Concealer#Winbufdo('call Concealer#UpdateBuffer(0)')
 	    " Now we can clear the entire dictionary.
 	    let s:globalConceals = {}
 	    return [0, ' ', '']
@@ -326,7 +349,8 @@ function! Concealer#AddLocal( key, char, pattern )
     let b:Concealer_Local[a:key] = a:pattern
 
     call s:Conceal('Local', a:key, a:char, a:pattern)
-    call s:SetDefaults()
+    call Concealer#SetDefaults()
+    call s:EnsureUpdates()
     return 1
 endfunction
 function! Concealer#RemoveLocal( key )
