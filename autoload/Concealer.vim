@@ -13,6 +13,9 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
+"   1.00.010	01-Jun-2014	Refactor listing of local conceals to use the
+"				b:Concealer_Local values instead of parsing the
+"				:syntax output.
 "   1.00.009	29-May-2014	Implement toggling of {expr} without a passed
 "				[count]: Determine the key by searching the
 "				b:Concealer_Local for the a:pattern.
@@ -400,24 +403,8 @@ function! Concealer#ToggleLiteralHere( count, text, isWholeWordSearch )
     call Concealer#Here(0, 1, a:count, ingo#regexp#FromLiteralText(a:text, a:isWholeWordSearch, '/'))
 endfunction
 
-function! s:ParseSyntaxOutput( syntaxLine )
-    " With [[:alnum:]], parse both counts created by the :ConcealHere command as
-    " well as special keys from Concealer#AddLocal(), but allow to "hide"
-    " conceals from the list by using an (allowed) underscore "_" character in
-    " the key.
-    let l:matches = matchlist(a:syntaxLine, '\C^\%(ConcealerLocal\([[:alnum:]]\+\)\s.\{-}\)\?\s\+match \([[:alnum:]\\"|]\@![\x00-\xFF]\)\(.*\)\2')
-    return (empty(l:matches) ? ['', ''] : [l:matches[1], l:matches[3]])
-endfunction
 function! Concealer#ListLocal()
     if ! exists('b:Concealer_Local') || len(b:Concealer_Local) == 0
-	return 0
-    endif
-
-    redir => l:concealSyntaxOutput
-    silent! execute 'syntax list' join(map(keys(b:Concealer_Local), '"ConcealerLocal" . v:val'))
-    redir END
-    let l:concealSyntax = split(l:concealSyntaxOutput, "\n")[1:]
-    if empty(l:concealSyntax)
 	return 0
     endif
 
@@ -425,24 +412,9 @@ function! Concealer#ListLocal()
     echo 'cnt  char pattern (buffer-local)'
     echohl None
 
-    let l:prevKey = ''
-    let l:patterns = []
-    for l:line in l:concealSyntax
-	let [l:key, l:pattern] = s:ParseSyntaxOutput(l:line)
-	if empty(l:key)
-	    let l:key = l:prevKey
-	    call add(l:patterns, l:pattern)
-	else
-	    if ! empty(l:prevKey)
-		call s:EchoConceal([l:prevKey, s:GetLocalChar(l:prevKey), join(l:patterns, '\|')], 1)
-	    endif
-	    let l:prevKey = l:key
-	    let l:patterns = [l:pattern]
-	endif
+    for l:count in sort(keys(b:Concealer_Local), 'ingo#collections#numsort')
+	call s:EchoConceal([l:count, s:GetLocalChar(l:count), b:Concealer_Local[l:count]], 0)
     endfor
-    if ! empty(l:prevKey)
-	call s:EchoConceal([l:prevKey, s:GetLocalChar(l:prevKey), join(l:patterns, '\|')], 1)
-    endif
 
     return 1
 endfunction
