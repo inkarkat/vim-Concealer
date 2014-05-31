@@ -20,6 +20,9 @@
 "				Concealer#Here().
 "				Add Concealer#ToggleLiteralHere() for the
 "				toggling-extended <Leader>XX mappings.
+"				Also remove previous conceal on
+"				:{count}ConcealHere {pattern}; there's no adding
+"				to local groups, nowhere.
 "   1.00.008	28-May-2014	:syn match doesn't support keepend.
 "				Support extended :ConcealHere! via dedicated
 "				Expose Concealer#AddLocal() and
@@ -328,8 +331,9 @@ function! Concealer#RemoveLocal( key )
     silent! unlet! b:Concealer_Local[a:key]
     return 1
 endfunction
-function! Concealer#Here( isBang, key, pattern, ... )
+function! Concealer#Here( isCommand, isBang, key, pattern, ... )
     if ! a:isBang
+	call Concealer#RemoveLocal(a:key)
 	if a:0
 	    call Concealer#AddLocal(a:key, a:1, a:pattern)
 	else
@@ -365,23 +369,26 @@ function! Concealer#Here( isBang, key, pattern, ... )
 	    endif
 
 	    if exists('b:Concealer_Local') && has_key(b:Concealer_Local, a:key)
-		if b:Concealer_Local[a:key] !=# a:pattern
+		if b:Concealer_Local[a:key] ==# a:pattern
+		    call Concealer#RemoveLocal(a:key)
+		    call s:Echo(printf('No conceal of pattern %s', a:pattern), 1)
+		    return 2
+		elseif a:isCommand
 		    call ingo#err#Set(printf('Passed pattern "%s" does not match existing definition "%s"', a:pattern, b:Concealer_Local[a:key]))
 		    return 0
-		endif
-		call Concealer#RemoveLocal(a:key)
-		call s:Echo(printf('No conceal of pattern %s', a:pattern), 1)
-		return 2
-	    else
-		if a:0
-		    call Concealer#AddLocal(a:key, a:1, a:pattern)
-		    call s:EchoConceal([a:key, a:1, a:pattern], 1)
 		else
-		    let l:result = Concealer#AddPattern(0, a:key, a:pattern)
-		    call s:EchoConceal(l:result, 1)
+		    call Concealer#RemoveLocal(a:key)
 		endif
-		return 1
 	    endif
+
+	    if a:0
+		call Concealer#AddLocal(a:key, a:1, a:pattern)
+		call s:EchoConceal([a:key, a:1, a:pattern], ! a:isCommand)
+	    else
+		let l:result = Concealer#AddPattern(0, a:key, a:pattern)
+		call s:EchoConceal(l:result, ! a:isCommand)
+	    endif
+	    return 1
 	endif
     endif
 endfunction
@@ -390,7 +397,7 @@ function! Concealer#ToggleLiteralHere( count, text, isWholeWordSearch )
 	execute "normal! \<C-\>\<C-n>\<Esc>" | " Beep.
 	return
     endif
-    call Concealer#Here(1, a:count, ingo#regexp#FromLiteralText(a:text, a:isWholeWordSearch, '/'))
+    call Concealer#Here(0, 1, a:count, ingo#regexp#FromLiteralText(a:text, a:isWholeWordSearch, '/'))
 endfunction
 
 function! s:ParseSyntaxOutput( syntaxLine )
