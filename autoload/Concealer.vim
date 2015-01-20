@@ -83,8 +83,13 @@ function! s:EchoConceal( data, isShorten )
     call s:Echo(printf("  %s", l:pattern), a:isShorten)
 endfunction
 
-function! s:GetLocalChar( count )
-    return get(split(g:Concealer_Characters_Local, '\zs'), a:count - 1, '')
+function! s:GetLocalChar( key )
+    if exists('b:Concealer_Local_Chars') && has_key(b:Concealer_Local_Chars, a:key)
+	return b:Concealer_Local_Chars[a:key]
+    else
+	let l:index = a:key - 1
+	return get(split(g:Concealer_Characters_Local, '\zs'), l:index, '')
+    endif
 endfunction
 function! s:GetChar( count )
     return get(split(g:Concealer_Characters_Global, '\zs'), a:count - 1, '')
@@ -177,12 +182,12 @@ function! s:Cycle()
     return s:globalCount
 endfunction
 
-function! Concealer#UpdateLocalCount( count )
-    silent! execute printf('syntax clear ConcealerLocal%s', a:count)
+function! Concealer#UpdateLocalCount( key )
+    silent! execute printf('syntax clear ConcealerLocal%s', a:key)
 
-    let l:char = s:GetLocalChar(a:count)
-    let l:pattern = get(b:Concealer_Local, a:count, '')
-    call s:Conceal('Local', a:count, l:char, l:pattern)
+    let l:char = s:GetLocalChar(a:key)
+    let l:pattern = get(b:Concealer_Local, a:key, '')
+    call s:Conceal('Local', a:key, l:char, l:pattern)
 endfunction
 function! Concealer#UpdateCount( count )
     silent! execute printf('syntax clear ConcealerGlobal%d', a:count)
@@ -359,6 +364,15 @@ function! Concealer#RemoveLocal( key )
     return 1
 endfunction
 function! Concealer#Here( isCommand, isBang, key, pattern, ... )
+    if a:0
+	" We need the custom (i.e. non-numeric) key -> char mapping to later
+	" reinstate the syntax definitions, and for the :Conceals command.
+	if ! exists('b:Concealer_Local_Chars')
+	    let b:Concealer_Local_Chars = {}
+	endif
+	let b:Concealer_Local_Chars[a:key] = a:1
+    endif
+
     if ! a:isBang
 	call Concealer#RemoveLocal(a:key)
 	if a:0
@@ -427,6 +441,8 @@ function! Concealer#ToggleLiteralHere( count, text, isWholeWordSearch )
     call Concealer#Here(0, 1, a:count, ingo#regexp#FromLiteralText(a:text, a:isWholeWordSearch, '/'))
 endfunction
 
+
+
 function! Concealer#ListLocal()
     if ! exists('b:Concealer_Local') || len(b:Concealer_Local) == 0
 	return 0
@@ -436,8 +452,8 @@ function! Concealer#ListLocal()
     echo 'cnt  char pattern (buffer-local)'
     echohl None
 
-    for l:count in sort(keys(b:Concealer_Local), 'ingo#collections#numsort')
-	call s:EchoConceal([l:count, s:GetLocalChar(l:count), b:Concealer_Local[l:count]], 0)
+    for l:key in sort(keys(b:Concealer_Local), 'ingo#collections#numsort')
+	call s:EchoConceal([l:key, s:GetLocalChar(l:key), b:Concealer_Local[l:key]], 0)
     endfor
 
     return 1
