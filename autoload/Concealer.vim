@@ -7,12 +7,14 @@
 "   - ingo/err.vim autoload script
 "   - ingo/regexp.vim autoload script
 "
-" Copyright: (C) 2012-2014 Ingo Karkat
+" Copyright: (C) 2012-2015 Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'.
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
+"   1.00.011	21-Jan-2015	BUG: "E475: Invalid argument" on :ConcealHere
+"				without arguments. Check and return error.
 "   1.00.010	01-Jun-2014	Refactor listing of local conceals to use the
 "				b:Concealer_Local values instead of parsing the
 "				:syntax output.
@@ -374,6 +376,11 @@ function! Concealer#Here( isCommand, isBang, key, pattern, ... )
     endif
 
     if ! a:isBang
+	if empty(a:pattern)
+	    call ingo#err#Set('No pattern given (add ! to clear all conceals; use :Conceals to list)')
+	    return 0
+	endif
+
 	call Concealer#RemoveLocal(a:key)
 	if a:0
 	    call Concealer#AddLocal(a:key, a:1, a:pattern)
