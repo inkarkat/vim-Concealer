@@ -13,6 +13,8 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
+"   1.00.012	22-Jan-2015	Add Concealer#GetLocal() and
+"				Concealer#GetGlobal() external API methods.
 "   1.00.011	21-Jan-2015	BUG: "E475: Invalid argument" on :ConcealHere
 "				without arguments. Check and return error.
 "   1.00.010	01-Jun-2014	Refactor listing of local conceals to use the
@@ -482,6 +484,13 @@ function! Concealer#List()
 	" let's focus the output on the currently active set.
 	call Concealer#ListGlobal()
     endif
+endfunction
+
+function! Concealer#GetLocal()
+    return (exists('b:Concealer_Local') ? copy(b:Concealer_Local) : {})
+endfunction
+function! Concealer#GetGlobal()
+    return copy(s:globalConceals)
 endfunction
 
 let &cpo = s:save_cpo
