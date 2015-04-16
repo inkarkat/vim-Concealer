@@ -12,6 +12,9 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
+"   1.00.006	29-May-2014	Enable toggling of <Leader>XX mappings by
+"				switching to the new Concealer#Here()
+"				backend.
 "   1.00.005	05-May-2014	Abort :ConcealRemove on error.
 "   1.00.004	24-May-2013	Move ingointegration#GetVisualSelection() into
 "				ingo-library.
@@ -58,7 +61,7 @@ endif
 
 "- commands --------------------------------------------------------------------
 
-command! -bang -count -nargs=* ConcealHere   if ! Concealer#HereCommand(<bang>0,<count>, <q-args>) | echoerr ingo#err#Get() | endif
+command! -bang -count -nargs=* ConcealHere   if ! Concealer#Here(1,    <bang>0, <count>, <q-args>) | echoerr ingo#err#Get() | endif
 command!       -count -nargs=1 ConcealAdd    call Concealer#AddCommand(      1, <count>, <q-args>)
 command! -bang -count -nargs=? ConcealRemove if ! Concealer#RemCommand(<bang>0, <count>, <q-args>) | echoerr ingo#err#Get() | endif
 command! -bar Conceals call Concealer#List()
@@ -66,14 +69,15 @@ command! -bar Conceals call Concealer#List()
 
 "- mappings --------------------------------------------------------------------
 
-nnoremap <silent> <Plug>(ConcealerAddLocal) :<C-u>call Concealer#AddLiteralText(0, v:count, expand('<cword>'), 1)<CR>
-if ! hasmapto('<Plug>(ConcealerAddLocal)', 'n')
-    nmap <Leader>XX <Plug>(ConcealerAddLocal)
+nnoremap <silent> <Plug>(ConcealerToggleLocal) :<C-u>call Concealer#ToggleLiteralHere(v:count, expand('<cword>'), 1)<CR>
+if ! hasmapto('<Plug>(ConcealerToggleLocal)', 'n')
+    nmap <Leader>XX <Plug>(ConcealerToggleLocal)
 endif
-vnoremap <silent> <Plug>(ConcealerAddLocal) :<C-u>call Concealer#AddLiteralText(0, v:count, ingo#selection#Get(), 0)<CR>
+vnoremap <silent> <Plug>(ConcealerToggleLocal) :<C-u>call Concealer#ToggleLiteralHere(v:count, ingo#selection#Get(), 0)<CR>
 if ! hasmapto('<Plug>(Concealer)', 'x')
-    xmap <Leader>XX <Plug>(ConcealerAddLocal)
+    xmap <Leader>XX <Plug>(ConcealerToggleLocal)
 endif
+
 nnoremap <silent> <Plug>(ConcealerAddGlobal) :<C-u>call Concealer#AddLiteralText(1, v:count, expand('<cword>'), 1)<CR>
 if ! hasmapto('<Plug>(ConcealerAddGlobal)', 'n')
     nmap <Leader>X+ <Plug>(ConcealerAddGlobal)
