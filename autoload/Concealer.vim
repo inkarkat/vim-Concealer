@@ -13,6 +13,10 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
+"   1.00.013	30-Jan-2015	ENH: Keep previous (last accessed) window on
+"				:windo.
+"				Consistently use :noautocmd during window
+"				iteration.
 "   1.00.012	22-Jan-2015	Add Concealer#GetLocal() and
 "				Concealer#GetGlobal() external API methods.
 "   1.00.011	21-Jan-2015	BUG: "E475: Invalid argument" on :ConcealHere
@@ -105,7 +109,8 @@ endfunction
 function! Concealer#Winbufdo( command )
     let l:buffers = []
 
-    let l:currentWinNr = winnr()
+    let l:originalWinNr = winnr()
+    let l:previousWinNr = winnr('#') ? winnr('#') : 1
     " By entering a window, its height is potentially increased from 0 to 1 (the
     " minimum for the current window). To avoid any modification, save the window
     " sizes and restore them after visiting all windows.
@@ -115,7 +120,8 @@ function! Concealer#Winbufdo( command )
 	    \       call add(l:buffers, bufnr('')) |
 	    \       execute a:command |
 	    \   endif
-    execute l:currentWinNr . 'wincmd w'
+    noautocmd execute l:previousWinNr . 'wincmd w'
+    noautocmd execute l:originalWinNr . 'wincmd w'
     silent! execute l:originalWindowLayout
 endfunction
 
@@ -144,13 +150,15 @@ function! Concealer#SetGlobalConcealDefaults()
     " The global settting cannot be changed via setwinvar(), so we have to
     " iterate through them.
 
-    let l:currentWinNr = winnr()
+    let l:originalWinNr = winnr()
+    let l:previousWinNr = winnr('#') ? winnr('#') : 1
     " By entering a window, its height is potentially increased from 0 to 1 (the
     " minimum for the current window). To avoid any modification, save the window
     " sizes and restore them after visiting all windows.
     let l:originalWindowLayout = winrestcmd()
 	noautocmd windo call Concealer#SetDefaults()
-    execute l:currentWinNr . 'wincmd w'
+    noautocmd execute l:previousWinNr . 'wincmd w'
+    noautocmd execute l:originalWinNr . 'wincmd w'
     silent! execute l:originalWindowLayout
 endfunction
 
