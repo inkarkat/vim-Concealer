@@ -198,6 +198,9 @@ LIMITATIONS					       *Concealer-limitations*
 <
 KNOWN PROBLEMS					    *Concealer-known-problems*
 
+- After :syntax off and :syntax on, the conceals aren't automatically
+  reinstated after a change of 'syntax'.
+
 TODO							      *Concealer-todo*
 
 IDEAS							     *Concealer-ideas*
