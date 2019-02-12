@@ -6,7 +6,7 @@
 "   - ingo/selection.vim autoload script
 "   - Concealer.vim autoload script
 "
-" Copyright: (C) 2012-2015 Ingo Karkat
+" Copyright: (C) 2012-2019 Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'.
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
@@ -42,9 +42,9 @@ let g:loaded_Concealer = 1
 
 if ! exists('g:Concealer_Characters_Global')
     if &encoding ==# 'utf-8'
-	let g:Concealer_Characters_Global = '¹²³£¥§¤®ÞØ×'
+	let g:Concealer_Characters_Global = '¹²³⁴⁵⁶⁷⁸⁹⁰ⁿ'
     else
-	let g:Concealer_Characters_Global = '1234567890X'
+	let g:Concealer_Characters_Global = '1234567890ñ'
     endif
 endif
 if ! exists('g:Concealer_Characters_Local')
