@@ -6,12 +6,16 @@
 "   - ingo/selection.vim autoload script
 "   - Concealer.vim autoload script
 "
-" Copyright: (C) 2012-2014 Ingo Karkat
+" Copyright: (C) 2012-2015 Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'.
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
+"   1.00.007	17-Apr-2015	Allow suppressing the :echo via a:isSilent
+"				flag added to all affected functions (except for
+"				the listing ones, where the suppressing doesn't
+"				make sense).
 "   1.00.006	29-May-2014	Enable toggling of <Leader>XX mappings by
 "				switching to the new Concealer#Here()
 "				backend.
@@ -61,9 +65,9 @@ endif
 
 "- commands --------------------------------------------------------------------
 
-command! -bang -count -nargs=* ConcealHere   if ! Concealer#Here(1,    <bang>0, <count>, <q-args>) | echoerr ingo#err#Get() | endif
-command!       -count -nargs=1 ConcealAdd    call Concealer#AddCommand(      1, <count>, <q-args>)
-command! -bang -count -nargs=? ConcealRemove if ! Concealer#RemCommand(<bang>0, <count>, <q-args>) | echoerr ingo#err#Get() | endif
+command! -bang -count -nargs=* ConcealHere   if ! Concealer#Here(0, 1,    <bang>0, <count>, <q-args>) | echoerr ingo#err#Get() | endif
+command!       -count -nargs=1 ConcealAdd    call Concealer#AddCommand(0,       1, <count>, <q-args>)
+command! -bang -count -nargs=? ConcealRemove if ! Concealer#RemCommand(0, <bang>0, <count>, <q-args>) | echoerr ingo#err#Get() | endif
 command! -bar Conceals call Concealer#List()
 
 
@@ -78,19 +82,19 @@ if ! hasmapto('<Plug>(Concealer)', 'x')
     xmap <Leader>XX <Plug>(ConcealerToggleLocal)
 endif
 
-nnoremap <silent> <Plug>(ConcealerAddGlobal) :<C-u>call Concealer#AddLiteralText(1, v:count, expand('<cword>'), 1)<CR>
+nnoremap <silent> <Plug>(ConcealerAddGlobal) :<C-u>call Concealer#AddLiteralText(0, 1, v:count, expand('<cword>'), 1)<CR>
 if ! hasmapto('<Plug>(ConcealerAddGlobal)', 'n')
     nmap <Leader>X+ <Plug>(ConcealerAddGlobal)
 endif
-vnoremap <silent> <Plug>(ConcealerAddGlobal) :<C-u>call Concealer#AddLiteralText(1, v:count, ingo#selection#Get(), 0)<CR>
+vnoremap <silent> <Plug>(ConcealerAddGlobal) :<C-u>call Concealer#AddLiteralText(0, 1, v:count, ingo#selection#Get(), 0)<CR>
 if ! hasmapto('<Plug>(Concealer)', 'x')
     xmap <Leader>X+ <Plug>(ConcealerAddGlobal)
 endif
-nnoremap <silent> <Plug>(ConcealerRemGlobal) :<C-u>call Concealer#RemLiteralText(v:count, expand('<cword>'), 1)<CR>
+nnoremap <silent> <Plug>(ConcealerRemGlobal) :<C-u>call Concealer#RemLiteralText(0, v:count, expand('<cword>'), 1)<CR>
 if ! hasmapto('<Plug>(ConcealerRemGlobal)', 'n')
     nmap <Leader>X- <Plug>(ConcealerRemGlobal)
 endif
-vnoremap <silent> <Plug>(ConcealerRemGlobal) :<C-u>call Concealer#RemLiteralText(v:count, ingo#selection#Get(), 0)<CR>
+vnoremap <silent> <Plug>(ConcealerRemGlobal) :<C-u>call Concealer#RemLiteralText(0, v:count, ingo#selection#Get(), 0)<CR>
 if ! hasmapto('<Plug>(Concealer)', 'x')
     xmap <Leader>X- <Plug>(ConcealerRemGlobal)
 endif
