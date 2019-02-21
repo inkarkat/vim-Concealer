@@ -13,6 +13,10 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
+"   1.00.014	17-Apr-2015	Allow suppressing the :echo via a:isSilent
+"				flag added to all affected functions (except for
+"				the listing ones, where the suppressing doesn't
+"				make sense).
 "   1.00.013	30-Jan-2015	ENH: Keep previous (last accessed) window on
 "				:windo.
 "				Consistently use :noautocmd during window
@@ -271,10 +275,12 @@ function! Concealer#AddPattern( isGlobal, count, pattern )
     endif
 
 endfunction
-function! Concealer#AddLiteralText( isGlobal, count, text, isWholeWordSearch )
+function! Concealer#AddLiteralText( isSilent, isGlobal, count, text, isWholeWordSearch )
     let l:result = Concealer#AddPattern(a:isGlobal, a:count, ingo#regexp#FromLiteralText(a:text, a:isWholeWordSearch, '/'))
 
-    call s:EchoConceal(l:result, 1)
+    if ! a:isSilent
+	call s:EchoConceal(l:result, 1)
+    endif
 endfunction
 
 function! Concealer#RemPattern( count, pattern )
@@ -319,7 +325,7 @@ function! Concealer#RemPattern( count, pattern )
 
     return []
 endfunction
-function! Concealer#RemLiteralText( count, text, isWholeWordSearch )
+function! Concealer#RemLiteralText( isSilent, count, text, isWholeWordSearch )
     if a:count
 	let l:result = Concealer#RemPattern(a:count, '')
     else
@@ -328,16 +334,18 @@ function! Concealer#RemLiteralText( count, text, isWholeWordSearch )
     if empty(l:result)
 	" The text wasn't found; inform the user via a bell.
 	execute "normal! \<C-\>\<C-n>\<Esc>"
-    else
+    elseif ! a:isSilent
 	call s:EchoConceal(l:result, 1)
     endif
 endfunction
 
-function! Concealer#AddCommand( isGlobal, count, pattern )
+function! Concealer#AddCommand( isSilent, isGlobal, count, pattern )
     let l:result = Concealer#AddPattern(a:isGlobal, a:count, a:pattern)
-    call s:EchoConceal(l:result, 0)
+    if ! a:isSilent
+	call s:EchoConceal(l:result, 0)
+    endif
 endfunction
-function! Concealer#RemCommand( isForce, count, pattern )
+function! Concealer#RemCommand( isSilent, isForce, count, pattern )
     if ! a:count && empty(a:pattern) && ! a:isForce
 	call ingo#err#Set('Neither count nor pattern given (add ! to clear all conceals)')
 	return 0
@@ -354,7 +362,9 @@ function! Concealer#RemCommand( isForce, count, pattern )
 	\)
 	return 0
     else
-	call s:EchoConceal(l:result, 0)
+	if ! a:isSilent
+	    call s:EchoConceal(l:result, 0)
+	endif
 	return 1
     endif
 endfunction
@@ -375,7 +385,7 @@ function! Concealer#RemoveLocal( key )
     silent! unlet! b:Concealer_Local[a:key]
     return 1
 endfunction
-function! Concealer#Here( isCommand, isBang, key, pattern, ... )
+function! Concealer#Here( isSilent, isCommand, isBang, key, pattern, ... )
     if a:0
 	" We need the custom (i.e. non-numeric) key -> char mapping to later
 	" reinstate the syntax definitions, and for the :Conceals command.
@@ -395,7 +405,7 @@ function! Concealer#Here( isCommand, isBang, key, pattern, ... )
 	if a:0
 	    call Concealer#AddLocal(a:key, a:1, a:pattern)
 	else
-	    call Concealer#AddCommand(0, a:key, a:pattern)
+	    call Concealer#AddCommand(a:isSilent, 0, a:key, a:pattern)
 	endif
 	return 1
     else
@@ -421,7 +431,9 @@ function! Concealer#Here( isCommand, isBang, key, pattern, ... )
 		let l:key = ingo#dict#find#FirstKey(b:Concealer_Local, a:pattern, 'ingo#collections#numsort')
 		if ! empty(l:key)
 		    call Concealer#RemoveLocal(l:key)
-		    call s:Echo(printf('No conceal of pattern %s', a:pattern), 1)
+		    if ! a:isSilent
+			call s:Echo(printf('No conceal of pattern %s', a:pattern), 1)
+		    endif
 		    return 2
 		endif
 	    endif
@@ -429,7 +441,9 @@ function! Concealer#Here( isCommand, isBang, key, pattern, ... )
 	    if exists('b:Concealer_Local') && has_key(b:Concealer_Local, a:key)
 		if b:Concealer_Local[a:key] ==# a:pattern
 		    call Concealer#RemoveLocal(a:key)
-		    call s:Echo(printf('No conceal of pattern %s', a:pattern), 1)
+		    if ! a:isSilent
+			call s:Echo(printf('No conceal of pattern %s', a:pattern), 1)
+		    endif
 		    return 2
 		elseif a:isCommand
 		    call ingo#err#Set(printf('Passed pattern "%s" does not match existing definition "%s"', a:pattern, b:Concealer_Local[a:key]))
@@ -441,10 +455,14 @@ function! Concealer#Here( isCommand, isBang, key, pattern, ... )
 
 	    if a:0
 		call Concealer#AddLocal(a:key, a:1, a:pattern)
-		call s:EchoConceal([a:key, a:1, a:pattern], ! a:isCommand)
+		if ! a:isSilent
+		    call s:EchoConceal([a:key, a:1, a:pattern], ! a:isCommand)
+		endif
 	    else
 		let l:result = Concealer#AddPattern(0, a:key, a:pattern)
-		call s:EchoConceal(l:result, ! a:isCommand)
+		if ! a:isSilent
+		    call s:EchoConceal(l:result, ! a:isCommand)
+		endif
 	    endif
 	    return 1
 	endif
