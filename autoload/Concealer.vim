@@ -402,7 +402,13 @@ function! Concealer#ListLocal()
     echo 'cnt  char pattern (buffer-local)'
     echohl None
 
-    for l:key in sort(keys(b:Concealer_Local), 'ingo#collections#numsort')
+    for l:key in sort(
+    \   filter(
+    \       keys(b:Concealer_Local),
+    \       'v:val !~# "_"'
+    \   ),
+    \   'ingo#collections#numsort'
+    \)
 	call s:EchoConceal([l:key, s:GetLocalChar(l:key), b:Concealer_Local[l:key]], 0)
     endfor
 
