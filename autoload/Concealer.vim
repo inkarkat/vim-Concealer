@@ -378,12 +378,12 @@ function! Concealer#Here( isSilent, isCommand, isBang, key, pattern, ... )
 	endif
     endif
 endfunction
-function! Concealer#ToggleLiteralHere( count, text, isWholeWordSearch )
+function! Concealer#ToggleLiteralHere( key, text, isWholeWordSearch, ... )
     if empty(a:text)
 	execute "normal! \<C-\>\<C-n>\<Esc>" | " Beep.
 	return
     endif
-    call Concealer#Here(0, 0, 1, a:count, ingo#regexp#FromLiteralText(a:text, a:isWholeWordSearch, '/'))
+    call call('Concealer#Here', [0, 0, 1, a:key, ingo#regexp#FromLiteralText(a:text, a:isWholeWordSearch, '/')] + a:000)
 endfunction
 
 
