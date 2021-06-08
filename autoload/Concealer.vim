@@ -289,6 +289,15 @@ function! Concealer#AddLocal( key, char, pattern )
     endif
     let b:Concealer_Local[a:key] = a:pattern
 
+    if ! s:IsKeyACount(a:key)
+	" We need the custom (i.e. non-numeric) key -> char mapping to later
+	" reinstate the syntax definitions, and for the :Conceals command.
+	if ! exists('b:Concealer_Local_Chars')
+	    let b:Concealer_Local_Chars = {}
+	endif
+	let b:Concealer_Local_Chars[a:key] = a:char
+    endif
+
     call s:Conceal('Local', a:key, a:char, a:pattern)
     call Concealer#SetDefaults()
     call s:EnsureUpdates()
@@ -297,18 +306,10 @@ endfunction
 function! Concealer#RemoveLocal( key )
     silent! execute printf('syntax clear ConcealerLocal%s', a:key)
     silent! unlet! b:Concealer_Local[a:key]
+    silent! unlet! b:Concealer_Local_Chars[a:key]
     return 1
 endfunction
 function! Concealer#Here( isSilent, isCommand, isBang, key, pattern, ... )
-    if a:0
-	" We need the custom (i.e. non-numeric) key -> char mapping to later
-	" reinstate the syntax definitions, and for the :Conceals command.
-	if ! exists('b:Concealer_Local_Chars')
-	    let b:Concealer_Local_Chars = {}
-	endif
-	let b:Concealer_Local_Chars[a:key] = a:1
-    endif
-
     if ! a:isBang
 	if empty(a:pattern)
 	    call ingo#err#Set('No pattern given (add ! to clear all conceals; use :Conceals to list)')
