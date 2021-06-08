@@ -383,7 +383,7 @@ function! Concealer#ToggleLiteralHere( count, text, isWholeWordSearch )
 	execute "normal! \<C-\>\<C-n>\<Esc>" | " Beep.
 	return
     endif
-    call Concealer#Here(0, 1, a:count, ingo#regexp#FromLiteralText(a:text, a:isWholeWordSearch, '/'))
+    call Concealer#Here(0, 0, 1, a:count, ingo#regexp#FromLiteralText(a:text, a:isWholeWordSearch, '/'))
 endfunction
 
 
