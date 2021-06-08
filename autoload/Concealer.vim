@@ -7,7 +7,7 @@
 "   - ingo/err.vim autoload script
 "   - ingo/regexp.vim autoload script
 "
-" Copyright: (C) 2012-2019 Ingo Karkat
+" Copyright: (C) 2012-2021 Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'.
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
@@ -112,22 +112,7 @@ function! s:GetCharSize()
 endfunction
 
 function! Concealer#Winbufdo( command )
-    let l:buffers = []
-
-    let l:originalWinNr = winnr()
-    let l:previousWinNr = winnr('#') ? winnr('#') : 1
-    " By entering a window, its height is potentially increased from 0 to 1 (the
-    " minimum for the current window). To avoid any modification, save the window
-    " sizes and restore them after visiting all windows.
-    let l:originalWindowLayout = winrestcmd()
-	noautocmd keepjumps windo
-	    \   if index(l:buffers, bufnr('')) == -1 |
-	    \       call add(l:buffers, bufnr('')) |
-	    \       execute a:command |
-	    \   endif
-    noautocmd execute l:previousWinNr . 'wincmd w'
-    noautocmd execute l:originalWinNr . 'wincmd w'
-    silent! execute l:originalWindowLayout
+    call ingo#window#iterate#All('let l:buffers = [] | if index(l:buffers, bufnr("")) == -1 | call add(l:buffers, bufnr("")) | v:val | endif', a:command)
 endfunction
 
 
@@ -155,16 +140,7 @@ function! Concealer#SetGlobalConcealDefaults()
     " The global settting cannot be changed via setwinvar(), so we have to
     " iterate through them.
 
-    let l:originalWinNr = winnr()
-    let l:previousWinNr = winnr('#') ? winnr('#') : 1
-    " By entering a window, its height is potentially increased from 0 to 1 (the
-    " minimum for the current window). To avoid any modification, save the window
-    " sizes and restore them after visiting all windows.
-    let l:originalWindowLayout = winrestcmd()
-	noautocmd keepjumps windo call Concealer#SetDefaults()
-    noautocmd execute l:previousWinNr . 'wincmd w'
-    noautocmd execute l:originalWinNr . 'wincmd w'
-    silent! execute l:originalWindowLayout
+    call ingo#window#iterate#All(function('Concealer#SetDefaults'))
 endfunction
 
 function! s:Conceal( scope, key, char, pattern )
