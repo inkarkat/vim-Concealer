@@ -16,9 +16,13 @@ function! s:Echo( msg, isShorten )
     echon (a:isShorten ? ingo#avoidprompt#Truncate(ingo#avoidprompt#TranslateLineBreaks(a:msg), 6) : a:msg)
 endfunction
 
+function! s:IsKeyACount( key ) abort
+    return (a:key =~# '^\d\+$')
+endfunction
+
 function! s:EchoConceal( data, isShorten )
     let [l:key, l:char, l:pattern] = a:data
-    if l:key =~# '^\d\+$'
+    if s:IsKeyACount(l:key)
 	echo printf('%3d    ', l:key)
     else
 	echo printf('%-6s ', l:key)
