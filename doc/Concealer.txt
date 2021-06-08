@@ -187,11 +187,17 @@ Likewise, to change the 'concealcursor' preset: >
 ==============================================================================
 INTEGRATION					       *Concealer-integration*
 
-You can use Concealer#AddLocal() and Concealer#RemoveLocal() to define custom,
-buffer-local concealments. This supports custom a:char. Choose a non-numeric,
-alphabetic a:key to avoid interfering with the conceal groups defined by the
-plugin. If you include an underscore character, the definition will be hidden
-from the |:Conceals| output.
+You can use the following functions to define custom, buffer-local
+concealments.
+- Concealer#AddLocal({key}, {char}, {pattern})
+- Concealer#RemoveLocal({key})
+- Concealer#Here({isSilent}, {isCommand}, {isBang}, {key}, {pattern}, {char})
+- Concealer#ToggleLiteralHere({key}, {text}, {isWholeWordSearch}, {char})
+
+These support a custom {char}. Choose a non-numeric, alphabetic {key} to avoid
+interfering with the conceal groups defined by the plugin. If you include an
+underscore character, the definition will be hidden from the |:Conceals|
+output.
 
 ==============================================================================
 LIMITATIONS					       *Concealer-limitations*
