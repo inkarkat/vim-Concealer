@@ -2,33 +2,12 @@
 "
 " DEPENDENCIES:
 "   - Requires Vim 7.3 or higher with the +conceal feature.
-"   - ingo/err.vim autoload script
-"   - ingo/selection.vim autoload script
-"   - Concealer.vim autoload script
+"   - ingo-library.vim plugin
 "
-" Copyright: (C) 2012-2019 Ingo Karkat
+" Copyright: (C) 2012-2021 Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'.
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
-"
-" REVISION	DATE		REMARKS
-"   1.00.007	17-Apr-2015	Allow suppressing the :echo via a:isSilent
-"				flag added to all affected functions (except for
-"				the listing ones, where the suppressing doesn't
-"				make sense).
-"   1.00.006	29-May-2014	Enable toggling of <Leader>XX mappings by
-"				switching to the new Concealer#Here()
-"				backend.
-"   1.00.005	05-May-2014	Abort :ConcealRemove on error.
-"   1.00.004	24-May-2013	Move ingointegration#GetVisualSelection() into
-"				ingo-library.
-"   1.00.003	05-Nov-2012	Remove -complete=expression; it's not useful for
-"				completing regexp patterns.
-"   1.00.002	25-Jul-2012	Add mappings and commands for conceal group
-"				removal.
-"				Add :Conceals command.
-"				Correct inclusion guard.
-"	001	24-Jul-2012	file creation
 
 scriptencoding utf-8
 

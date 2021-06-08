@@ -1,79 +1,12 @@
 " Concealer.vim: Manually conceal current word or selection.
 "
 " DEPENDENCIES:
-"   - ingo/avoidprompt.vim autoload script
-"   - ingo/collections.vim autoload script
-"   - ingo/dict/find.vim autoload script
-"   - ingo/err.vim autoload script
-"   - ingo/regexp.vim autoload script
+"   - ingo-library.vim plugin
 "
 " Copyright: (C) 2012-2021 Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'.
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
-"
-" REVISION	DATE		REMARKS
-"   1.00.015	22-Feb-2019	FIX: Avoid creating jump on :windo.
-"   1.00.014	17-Apr-2015	Allow suppressing the :echo via a:isSilent
-"				flag added to all affected functions (except for
-"				the listing ones, where the suppressing doesn't
-"				make sense).
-"   1.00.013	30-Jan-2015	ENH: Keep previous (last accessed) window on
-"				:windo.
-"				Consistently use :noautocmd during window
-"				iteration.
-"   1.00.012	22-Jan-2015	Add Concealer#GetLocal() and
-"				Concealer#GetGlobal() external API methods.
-"   1.00.011	21-Jan-2015	BUG: "E475: Invalid argument" on :ConcealHere
-"				without arguments. Check and return error.
-"   1.00.010	01-Jun-2014	Refactor listing of local conceals to use the
-"				b:Concealer_Local values instead of parsing the
-"				:syntax output.
-"				Also make local conceals persist on syntax
-"				changes by creating an analog
-"				Concealer#UpdateLocalCount() and hooking it into
-"				the autocmds, which are now also activated on
-"				Concealer#AddLocal().
-"				After a change of syntax, 'conceallevel' may
-"				have been reset; trigger (now exposed)
-"				Concealer#SetDefaults() on the Syntax event,
-"				too.
-"   1.00.009	29-May-2014	Implement toggling of {expr} without a passed
-"				[count]: Determine the key by searching the
-"				b:Concealer_Local for the a:pattern.
-"				Rename Concealer#HereCommand() to
-"				Concealer#Here().
-"				Add Concealer#ToggleLiteralHere() for the
-"				toggling-extended <Leader>XX mappings.
-"				Also remove previous conceal on
-"				:{count}ConcealHere {pattern}; there's no adding
-"				to local groups, nowhere.
-"   1.00.008	28-May-2014	:syn match doesn't support keepend.
-"				Support extended :ConcealHere! via dedicated
-"				Expose Concealer#AddLocal() and
-"				Concealer#RemoveLocal() that also handle custom
-"				a:char and non-numeric a:count => a:key.
-"				Concealer#HereCommand().
-"				Improve s:EchoConceal formatting.
-"   1.00.007	05-May-2014	Abort :ConcealRemove on error.
-"   1.00.006	14-Jun-2013	Minor: Make matchstr() robust against
-"				'ignorecase'.
-"   1.00.005	07-Jun-2013	Move EchoWithoutScrolling.vim into ingo-library.
-"   1.00.004	24-May-2013	Move ingosearch.vim to ingo-library.
-"   1.00.003	21-Feb-2013	Move ingocollections.vim to ingo-library.
-"   1.00.002	25-Jul-2012	Add dedicated functions to back up the commands,
-"				so that error messages are printed.
-"				Add Concealer#List() and implement this for both
-"				global and local conceal groups (in different
-"				ways, due to the ways they are stored).
-"				Adapt s:SetConcealDefaults() to work on global
-"				conceal groups: Invoking on the first window of
-"				each buffer isn't sufficient, as it sets
-"				window-scoped stuff. Rather, apply once for
-"				local conceal groups, and for each window
-"				(repeated once when each tab page is entered)
-"				for global conceal groups.
-"	001	24-Jul-2012	file creation
 let s:save_cpo = &cpo
 set cpo&vim
 
