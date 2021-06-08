@@ -108,7 +108,7 @@ function! s:Cycle()
     return s:globalCount
 endfunction
 
-function! Concealer#UpdateLocalCount( key )
+function! Concealer#UpdateLocalKey( key )
     silent! execute printf('syntax clear ConcealerLocal%s', a:key)
 
     let l:char = s:GetLocalChar(a:key)
@@ -129,8 +129,8 @@ function! Concealer#UpdateBuffer( isUpdateLocal )
     endfor
 
     if a:isUpdateLocal && exists('b:Concealer_Local')
-	for l:count in keys(b:Concealer_Local)
-	    call Concealer#UpdateLocalCount(l:count)
+	for l:key in keys(b:Concealer_Local)
+	    call Concealer#UpdateLocalKey(l:key)
 	endfor
     endif
 endfunction
